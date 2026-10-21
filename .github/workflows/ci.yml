@@ -1,0 +1,37 @@
+# 号源 QueueDepth · 移动端 CI（E5）
+#
+# 与本地门槛同序：type-check → lint → build:h5。
+# 不跑小程序构建（需要 appid 与开发者工具；本地手验）。
+name: app-ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build H5
+        run: pnpm build:h5
