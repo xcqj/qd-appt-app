@@ -1,0 +1,9 @@
+# pnpm 12 起：依赖的构建脚本默认全部忽略（install 会以 ERR_PNPM_IGNORED_BUILDS 失败）。
+# 这里按包显式放行——esbuild 需要 postinstall 校验平台二进制，vue-demi 要按 Vue 版本切换入口。
+# 注意：`onlyBuiltDependencies` / package.json 的 `pnpm` 字段在 pnpm 12 已不再读取。
+allowBuilds:
+  '@parcel/watcher': true
+  core-js: true
+  core-js-pure: true
+  esbuild: true
+  vue-demi: true

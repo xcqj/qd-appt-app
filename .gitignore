@@ -19,3 +19,7 @@ dist
 *.njsproj
 *.sln
 *.sw?
+# unpackage / 本地环境
+unpackage
+.env.local
+dist
