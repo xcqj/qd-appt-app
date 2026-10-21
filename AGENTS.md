@@ -40,6 +40,7 @@ pnpm build:h5     # 生产构建
 |---|---|
 | 请求 | 只用 `src/utils/request.ts`；后端 **HTTP 恒 200，业务码在 `body.code`**；401 并发只跳一次登录 |
 | 加密 | 仅 `/auth/login`：`encrypt-key: RSA(base64(aesKey))` + body `base64(AES(json))`；**私钥绝不入库** |
+| **设计** | **写页面前先对照 `DESIGN.md`**：颜色/字号/间距/圆角只用其中 token，状态色取 §2.3 表，不新造色值；两套状态标签（有排班·无排班 / 满诊·无号）严禁混用 |
 | 幂等 | 挂号请求必须带 `Idempotency-Key`（`newIdempotencyKey()`，小程序无 `randomUUID` 时降级） |
 | 路由 | 手写 `pages.json`；`uni.switchTab` **不支持 query**，tab 间上下文一律进 store |
 | tabBar | 患者用原生四项；分诊用 `components/TriageTabbar.vue` 自绘 + `uni.reLaunch` 互跳；**不要**改 `tabBar.custom` |
