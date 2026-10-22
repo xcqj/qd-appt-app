@@ -7,22 +7,19 @@ import { ROUTES } from '@/router/routes'
  * 为什么不用原生 tabBar：原生 tabBar 在 pages.json 里是静态的，最多 5 项，
  * 患者（4 项）与分诊（4 项）无法并存；`uni.setTabBarItem` 只能改文字/图标，不能增删项。
  * 所以分诊走「普通页面 + 自绘底栏」，页间 `reLaunch` 互跳（不增长页面栈，H5 刷新也能渲染）。
+ *
+ * 2026-10-23：去掉「加号」项 —— E4 加号登记后端未实现，留一个点了只弹「暂未开放」的入口
+ * 会被当成缺陷；将来实现 E4 时在 items 里加回一行即可（`ROUTES.triageExtra` 落位）。
  */
-defineProps<{ active: 'sign' | 'list' | 'extra' | 'suspend' }>()
+defineProps<{ active: 'sign' | 'list' | 'suspend' }>()
 
 const items = [
-  { key: 'sign', label: '签到', path: ROUTES.triageSign, hint: '' },
-  { key: 'list', label: '当日', path: ROUTES.triageList, hint: '' },
-  // 加号依赖 E4（后端未实现）：保留入口但明确「暂未开放」
-  { key: 'extra', label: '加号', path: '', hint: '加号登记功能暂未开放' },
-  { key: 'suspend', label: '停诊', path: ROUTES.triageSuspend, hint: '' },
+  { key: 'sign', label: '签到', path: ROUTES.triageSign },
+  { key: 'list', label: '当日', path: ROUTES.triageList },
+  { key: 'suspend', label: '停诊', path: ROUTES.triageSuspend },
 ] as const
 
-function go(path: string, hint: string) {
-  if (!path) {
-    uni.showToast({ title: hint || '该功能暂未开放', icon: 'none' })
-    return
-  }
+function go(path: string) {
   uni.reLaunch({ url: path })
 }
 </script>
@@ -33,8 +30,8 @@ function go(path: string, hint: string) {
       v-for="item in items"
       :key="item.key"
       class="triage-tabbar__item"
-      :class="{ 'is-active': active === item.key, 'is-pending': !item.path }"
-      @click="go(item.path, item.hint)"
+      :class="{ 'is-active': active === item.key }"
+      @click="go(item.path)"
     >
       <view class="triage-tabbar__dot" />
       <text class="triage-tabbar__label">{{ item.label }}</text>
@@ -67,10 +64,6 @@ function go(path: string, hint: string) {
     &.is-active {
       color: #1f7a8c;
       font-weight: 600;
-    }
-
-    &.is-pending {
-      opacity: 0.55;
     }
   }
 
