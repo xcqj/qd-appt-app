@@ -13,6 +13,7 @@ export const ROUTES = {
   home: '/pages/index/index',
   registration: '/pages/registration/index',
   notice: '/pages/notice/index',
+  noticeDetail: '/pages/notice/detail',
   mine: '/pages/mine/index',
   login: '/pages/login/index',
   campus: '/pages/campus/index',
@@ -23,7 +24,11 @@ export const ROUTES = {
   slots: '/pages/schedule/slots',
   bookingConfirm: '/pages/booking/confirm',
   bookingPayment: '/pages/booking/payment',
+  registrationDetail: '/pages/registration/detail',
+  patientList: '/pages/patient/index',
+  favoriteList: '/pages/favorite/index',
   triageSign: '/pages/triage/sign/index',
+  triageList: '/pages/triage/list',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]

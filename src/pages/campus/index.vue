@@ -76,7 +76,7 @@ function choose(campus: CampusVo): void {
                 <text class="appt-title campus__name">{{ campus.name }}</text>
                 <text v-if="campus.campusId === currentId" class="campus__badge">当前</text>
               </view>
-              <text class="appt-weak">{{ campus.address || '地址待补充' }}</text>
+              <text class="appt-weak">{{ campus.address || '地址信息暂缺' }}</text>
             </view>
           </view>
         </view>

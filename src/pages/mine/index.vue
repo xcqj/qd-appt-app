@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ROUTES } from '@/router/routes'
+import { onShow } from '@dcloudio/uni-app'
+
+import { clearUnreadBadge } from '@/composables/useUnreadBadge'
+import { navigateTo, ROUTES, switchTab } from '@/router/routes'
+import { useBookingStore } from '@/store/booking'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
+const booking = useBookingStore()
 
 function goLogin() {
-  uni.navigateTo({ url: ROUTES.login })
+  navigateTo(ROUTES.login)
 }
 
 function toTriage() {
@@ -13,13 +18,38 @@ function toTriage() {
 }
 
 function toPatient() {
-  uni.switchTab({ url: ROUTES.home })
+  switchTab(ROUTES.home)
+}
+
+function toPatients() {
+  navigateTo(ROUTES.patientList)
+}
+
+function toFavorites() {
+  navigateTo(ROUTES.favoriteList)
+}
+
+function toRegistration() {
+  switchTab(ROUTES.registration)
+}
+
+function toNotice() {
+  switchTab(ROUTES.notice)
 }
 
 async function handleLogout() {
   await userStore.logout()
+  // 退出时清掉挂号上下文与未读角标，避免换账号后串号
+  booking.reset()
+  clearUnreadBadge()
   uni.reLaunch({ url: ROUTES.login })
 }
+
+onShow(() => {
+  if (!userStore.isLogin) {
+    clearUnreadBadge()
+  }
+})
 </script>
 
 <template>
@@ -36,6 +66,22 @@ async function handleLogout() {
     </view>
 
     <view class="cells">
+      <view v-if="userStore.isLogin" class="cell" @click="toPatients">
+        <text>我的就诊人</text>
+        <text class="cell__arrow">›</text>
+      </view>
+      <view v-if="userStore.isLogin" class="cell" @click="toFavorites">
+        <text>我的医生</text>
+        <text class="cell__arrow">›</text>
+      </view>
+      <view v-if="userStore.isLogin" class="cell" @click="toRegistration">
+        <text>我的预约</text>
+        <text class="cell__arrow">›</text>
+      </view>
+      <view v-if="userStore.isLogin" class="cell" @click="toNotice">
+        <text>消息</text>
+        <text class="cell__arrow">›</text>
+      </view>
       <view v-if="userStore.isTriage" class="cell" @click="toTriage">
         <text>切换到分诊台</text>
         <text class="cell__arrow">›</text>
@@ -51,7 +97,7 @@ async function handleLogout() {
     </view>
 
     <view class="footnote">
-      骨架页：就诊人 / 我的医生 / 消息等业务页在 S11 实现；本页只验证登录态与双角色切换。
+      演示项目：数据全部虚构，支付走模拟渠道，不提供真实医疗服务。
     </view>
   </view>
 </template>

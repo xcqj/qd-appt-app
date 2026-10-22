@@ -66,12 +66,12 @@ onLoad((query) => {
         :error="error"
         :empty="isEmpty"
         empty-text="该科室暂无出诊医生"
-        empty-desc="可以换个科室，或稍后再来看看"
+        empty-desc="请选择其他科室，或稍后重试"
         :rows="4"
         @retry="run"
       >
         <template #empty-action>
-          <wd-button size="small" variant="plain" type="primary" @click="changeDept">换个科室</wd-button>
+          <wd-button size="small" variant="plain" type="primary" @click="changeDept">选择其他科室</wd-button>
         </template>
 
         <view class="doctor-list__grid">

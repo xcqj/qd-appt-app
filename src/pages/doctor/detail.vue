@@ -7,20 +7,60 @@
  * `favorited` 本片只读展示（收藏写侧归 S11）。
  */
 import { onLoad } from '@dcloudio/uni-app'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import { addFavorite, removeFavorite } from '@/api/appt/favorite'
 import type { DateVo, StaffDetailVo } from '@/api/appt/types'
 import { getScheduleDates, getStaffDetail } from '@/api/appt/public'
 import PageState from '@/components/PageState.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { navigateBack, navigateTo, ROUTES } from '@/router/routes'
 import { useBookingStore } from '@/store/booking'
-import { clinicTypeLabel, doctorAvailabilityLabel, titleLabel } from '@/utils/appt'
+import { useUserStore } from '@/store/user'
+import { bizMessage, clinicTypeLabel, doctorAvailabilityLabel, titleLabel } from '@/utils/appt'
 
 const booking = useBookingStore()
+const userStore = useUserStore()
 const staffId = ref('')
 
 const { data: staff, loading, error, run } = useAsyncData<StaffDetailVo>(() => getStaffDetail(staffId.value))
+
+/** 收藏写侧（S11）：只做按钮 loading，不自判是否已收藏（后端幂等） */
+const favorited = ref(false)
+const favoriteBusy = ref(false)
+watch(
+  () => staff.value?.favorited,
+  (value) => {
+    favorited.value = Boolean(value)
+  },
+  { immediate: true },
+)
+
+async function toggleFavorite(): Promise<void> {
+  if (!staff.value || favoriteBusy.value) {
+    return
+  }
+  if (!userStore.isLogin) {
+    navigateTo(ROUTES.login)
+    return
+  }
+  favoriteBusy.value = true
+  try {
+    if (favorited.value) {
+      await removeFavorite(staff.value.staffId)
+      favorited.value = false
+      uni.showToast({ title: '已取消收藏', icon: 'none' })
+    } else {
+      await addFavorite(staff.value.staffId)
+      favorited.value = true
+      uni.showToast({ title: '已加入我的医生', icon: 'none' })
+    }
+  } catch (e) {
+    uni.showToast({ title: bizMessage(e), icon: 'none' })
+  } finally {
+    favoriteBusy.value = false
+  }
+}
 
 /** 满诊 / 无号只在医生主页出现；A5 只用 staffId 模式 */
 const { data: dates, run: loadDates } = useAsyncData<DateVo[]>(() => getScheduleDates({ staffId: staffId.value }))
@@ -69,11 +109,17 @@ onLoad((query) => {
             <view v-else class="doctor-detail__avatar doctor-detail__avatar--empty" />
             <view class="doctor-detail__id">
               <text class="doctor-detail__name">{{ staff.name }}</text>
-              <text class="doctor-detail__title">{{ titleLabel(staff.title) }}</text>
+              <text class="doctor-detail__title">
+                {{ titleLabel(staff.title) }}<text v-if="staff.degree" class="doctor-detail__degree">{{ staff.degree }}</text>
+              </text>
               <view class="doctor-detail__tags">
                 <text class="doctor-detail__tag">{{ clinicTypeLabel(staff.clinicType) }}</text>
-                <text v-if="staff.favorited" class="doctor-detail__tag doctor-detail__tag--ghost">已收藏</text>
                 <text v-if="availability" class="doctor-detail__tag doctor-detail__tag--ghost">{{ availability }}</text>
+                <text
+                  class="doctor-detail__tag doctor-detail__tag--ghost"
+                  :class="{ 'doctor-detail__tag--on': favorited }"
+                  @click="toggleFavorite"
+                >{{ favoriteBusy ? '处理中…' : favorited ? '已收藏' : '收藏' }}</text>
               </view>
             </view>
           </view>
@@ -82,15 +128,11 @@ onLoad((query) => {
             <text class="appt-weak">就诊地点</text>
             <text class="appt-text">{{ subtitle || '以排班为准' }}</text>
           </view>
-          <view class="doctor-detail__row">
-            <text class="appt-weak">学位</text>
-            <text class="appt-text">{{ staff.degree || '未填写' }}</text>
-          </view>
         </view>
 
         <view v-if="staff" class="appt-card doctor-detail__intro">
           <text class="appt-section-title">擅长</text>
-          <text class="doctor-detail__intro-text">{{ staff.intro || '该医生暂未填写擅长方向，具体以门诊现场为准。' }}</text>
+          <text class="doctor-detail__intro-text">{{ staff.intro || '该医生暂未维护擅长方向，具体以门诊现场为准。' }}</text>
         </view>
       </PageState>
     </view>
@@ -145,6 +187,12 @@ onLoad((query) => {
     color: var(--appt-text-sub);
   }
 
+  /* 学位跟在职称后面，用间距分隔（不另起一行） */
+  &__degree {
+    margin-left: 16rpx;
+    color: var(--appt-text-weak);
+  }
+
   &__tags {
     display: flex;
     flex-wrap: wrap;
@@ -163,6 +211,11 @@ onLoad((query) => {
     &--ghost {
       background-color: var(--appt-surface-weak);
       color: var(--appt-text-sub);
+    }
+
+    &--on {
+      background-color: rgba(31, 122, 140, 0.12);
+      color: var(--appt-primary);
     }
   }
 

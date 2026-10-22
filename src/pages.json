@@ -79,9 +79,39 @@
       }
     },
     {
+      "path": "pages/notice/detail",
+      "style": {
+        "navigationBarTitleText": "消息详情"
+      }
+    },
+    {
+      "path": "pages/registration/detail",
+      "style": {
+        "navigationBarTitleText": "预约详情"
+      }
+    },
+    {
+      "path": "pages/patient/index",
+      "style": {
+        "navigationBarTitleText": "我的就诊人"
+      }
+    },
+    {
+      "path": "pages/favorite/index",
+      "style": {
+        "navigationBarTitleText": "我的医生"
+      }
+    },
+    {
       "path": "pages/triage/sign/index",
       "style": {
         "navigationBarTitleText": "分诊签到"
+      }
+    },
+    {
+      "path": "pages/triage/list",
+      "style": {
+        "navigationBarTitleText": "当日签到"
       }
     }
   ],

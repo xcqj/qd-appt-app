@@ -11,15 +11,16 @@ import { ROUTES } from '@/router/routes'
 defineProps<{ active: 'sign' | 'list' | 'extra' | 'suspend' }>()
 
 const items = [
-  { key: 'sign', label: '签到', path: ROUTES.triageSign },
-  { key: 'list', label: '当日', path: '' },
-  { key: 'extra', label: '加号', path: '' },
-  { key: 'suspend', label: '停诊', path: '' },
+  { key: 'sign', label: '签到', path: ROUTES.triageSign, hint: '' },
+  { key: 'list', label: '当日', path: ROUTES.triageList, hint: '' },
+  // 加号依赖 E4（后端未实现）；停诊上报不在 S11 清单：都保留入口但明确「暂未开放」
+  { key: 'extra', label: '加号', path: '', hint: '加号登记功能暂未开放' },
+  { key: 'suspend', label: '停诊', path: '', hint: '停诊上报功能暂未开放' },
 ] as const
 
-function go(key: string, path: string) {
+function go(path: string, hint: string) {
   if (!path) {
-    uni.showToast({ title: '该页将在 S11 实现', icon: 'none' })
+    uni.showToast({ title: hint || '该功能暂未开放', icon: 'none' })
     return
   }
   uni.reLaunch({ url: path })
@@ -33,7 +34,7 @@ function go(key: string, path: string) {
       :key="item.key"
       class="triage-tabbar__item"
       :class="{ 'is-active': active === item.key, 'is-pending': !item.path }"
-      @click="go(item.key, item.path)"
+      @click="go(item.path, item.hint)"
     >
       <view class="triage-tabbar__dot" />
       <text class="triage-tabbar__label">{{ item.label }}</text>

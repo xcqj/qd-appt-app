@@ -30,6 +30,8 @@ const TABS = [
   { key: 'CANCELED', label: '退号·爽约' },
 ]
 
+const TAB_KEYS = TABS.map((tab) => tab.key)
+
 const SUBS = [
   { key: 'CANCELED_ACTIVE', label: '主动退号' },
   { key: 'CANCELED_PASSIVE', label: '停诊退号' },
@@ -55,6 +57,30 @@ let defaultResolved = false
 const queryStatus = computed(() => (activeTab.value === 'CANCELED' ? activeSub.value : activeTab.value))
 const isEmpty = computed(() => !loading.value && !error.value && rows.value.length === 0)
 const finished = computed(() => rows.value.length >= total.value)
+
+function goDetail(row: RegistrationRowVo): void {
+  navigateTo(ROUTES.registrationDetail, { registrationId: row.registrationId })
+}
+
+/**
+ * 再次预约
+ *
+ * B2 行只有 `staffName / deptName`，**没有 `staffId / deptId`** → 只能经 B3 取 `staff.staffId`
+ * 再进医生主页（A4 会给出 `deptId`，「查看排班」才有上下文）。不凭空造 id。
+ */
+async function rebook(row: RegistrationRowVo): Promise<void> {
+  try {
+    const detail = await getRegistrationDetail(row.registrationId)
+    const staffId = detail.staff?.staffId
+    if (!staffId) {
+      uni.showToast({ title: '该预约缺少医生信息，请到科室列表重新选择', icon: 'none' })
+      return
+    }
+    navigateTo(ROUTES.doctorDetail, { staffId })
+  } catch (e) {
+    uni.showToast({ title: bizMessage(e), icon: 'none' })
+  }
+}
 
 async function load(reset: boolean): Promise<void> {
   if (!userStore.isLogin) {
@@ -118,8 +144,13 @@ async function resolveDefaultTab(): Promise<void> {
 }
 
 async function refresh(): Promise<void> {
+  // 兜底：activeTab 必须是已知 tab（历史 bug：意图被传成事件对象时会出现未知值 → 无高亮 + 空列表）
+  if (!TAB_KEYS.includes(activeTab.value)) {
+    activeTab.value = 'WAIT_PAY'
+    tabPicked.value = false
+  }
   const intent = booking.takeListIntent()
-  if (intent) {
+  if (intent && TAB_KEYS.includes(intent)) {
     tabPicked.value = true
     if (intent !== activeTab.value) {
       activeTab.value = intent
@@ -177,7 +208,7 @@ function cancelBooking(row: RegistrationRowVo): void {
   uni.showModal({
     title: '取消本次预约',
     content: `取消后 ${row.staffName} 的号源会立即释放。`,
-    cancelText: '再想想',
+    cancelText: '取消',
     confirmText: '确认取消',
     success: (res) => {
       if (!res.confirm) {
@@ -196,7 +227,7 @@ async function doCancel(row: RegistrationRowVo): Promise<void> {
   try {
     const result = await cancelUnpaidPayment(payment.paymentNo)
     uni.showToast({
-      title: result.status === 'CLOSED' ? '已取消，可在「退号·爽约 → 已关闭」查看' : '该预约已支付，未取消',
+      title: result.status === 'CLOSED' ? '已取消，可在「退号·爽约 → 已关闭」查看' : '该预约已完成支付，未取消',
       icon: 'none',
     })
     void load(true)
@@ -247,7 +278,7 @@ onReachBottom(() => {
 
     <view class="appt-content record__body">
       <view v-if="!userStore.isLogin" class="record__panel">
-        <PageState :empty="true" empty-text="未登录，看不到预约" empty-desc="登录后可查看待支付、已预约与历史记录">
+        <PageState :empty="true" empty-text="未登录，无法查看预约" empty-desc="登录后可查看待支付、已预约与历史记录">
           <template #empty-action>
             <wd-button size="small" type="primary" @click="goLogin">去登录</wd-button>
           </template>
@@ -259,19 +290,20 @@ onReachBottom(() => {
         :loading="loading"
         :error="error"
         :empty="isEmpty"
-        empty-text="还没有预约"
-        empty-desc="去看看今天有哪些医生出诊"
+        empty-text="暂无预约记录"
+        empty-desc="请选择科室与医生完成预约"
         :rows="3"
         @retry="load(true)"
       >
         <template #empty-action>
-          <wd-button size="small" variant="plain" type="primary" @click="goHome">去看医生</wd-button>
+          <wd-button size="small" variant="plain" type="primary" @click="goHome">去预约</wd-button>
         </template>
 
         <view
           v-for="row in rows"
           :key="row.registrationId"
-          class="record__card appt-card"
+          class="record__card appt-card appt-press"
+          @click="goDetail(row)"
         >
           <view class="record__bar" :class="`record__bar--${row.status}`" />
           <view class="record__head">
@@ -283,10 +315,18 @@ onReachBottom(() => {
           </text>
           <text class="record__line record__line--weak">{{ row.patientName }} · {{ periodLabel(row.period) }} · {{ row.registrationNo }}</text>
 
-          <view v-if="row.status === 'WAIT_PAY'" class="record__actions">
-            <wd-button size="small" variant="plain" @click="cancelBooking(row)">取消</wd-button>
-            <view class="record__action-gap" />
-            <wd-button size="small" type="primary" @click="payNow(row)">去支付</wd-button>
+          <view class="record__actions">
+            <template v-if="row.status === 'WAIT_PAY'">
+              <wd-button size="small" variant="plain" @click.stop="cancelBooking(row)">取消</wd-button>
+              <view class="record__action-gap" />
+              <wd-button size="small" type="primary" @click.stop="payNow(row)">去支付</wd-button>
+            </template>
+            <template v-else-if="row.status === 'BOOKED'">
+              <wd-button size="small" type="primary" @click.stop="goDetail(row)">查看就诊码</wd-button>
+            </template>
+            <template v-else>
+              <wd-button size="small" variant="plain" @click.stop="rebook(row)">再次预约</wd-button>
+            </template>
           </view>
         </view>
 

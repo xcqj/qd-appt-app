@@ -83,8 +83,8 @@ onLoad(() => {
       <view v-if="missingContext" class="slots__panel">
         <PageState
           :empty="true"
-          empty-text="还没有选择排班"
-          empty-desc="请从排班页选择医生与午别后再选时间"
+          empty-text="未选择排班"
+          empty-desc="请返回排班页选择医生与午别"
         >
           <template #empty-action>
             <wd-button size="small" type="primary" @click="changePeriod">返回排班</wd-button>
@@ -103,7 +103,7 @@ onLoad(() => {
           :error="error"
           :empty="isEmpty"
           empty-text="该午别号源已约满"
-          empty-desc="换一个午别或日期试试"
+          empty-desc="请选择其他午别或日期"
           :rows="3"
           @retry="run"
         >

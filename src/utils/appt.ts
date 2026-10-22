@@ -122,20 +122,20 @@ export function payStatusLabel(status?: string | null): string {
 /* ------------------------------ 业务码 → 中文（DESIGN §8.2） ------------------------------ */
 
 const BIZ_MESSAGES: Record<string, string> = {
-  SLOT_GONE: '该时间点刚被约走，换一个试试',
-  LIMIT_HOLD_MAX: '你已有 3 个待就诊预约，先完成或取消一个',
-  LIMIT_DEPT_DAY: '同一天同一科室只能约 1 个号',
-  LIMIT_TIME_CONFLICT: '这个时间你已经有预约了',
-  BLACKLISTED: '近期退号/爽约较多，暂不可预约，请联系门诊服务台',
-  OUT_OF_WINDOW: '该日期暂未开放预约（可约未来 7 天）',
-  SCHEDULE_SUSPENDED: '该医生当日停诊，已为你释放号源',
-  REFUND_DEADLINE_PASSED: '已过退号时限（就诊前一日 23:00）',
-  REG_STATE_INVALID: '该预约当前状态不支持此操作',
-  PATIENT_LIMIT_EXCEEDED: '就诊人已达 10 人上限，先删除不用的',
-  PATIENT_IN_USE: '该就诊人还有未完成的预约',
+  SLOT_GONE: '该号源已被占用，请重新选择就诊时间',
+  LIMIT_PATIENT_DAY: '同一就诊人同一天只能有一个预约',
+  BLACKLISTED: '当前账号处于限制预约期，如需帮助请联系门诊服务台',
+  OUT_OF_WINDOW: '该日期不在可预约范围内（可预约未来 7 天）',
+  SCHEDULE_SUSPENDED: '该医生当日停诊，号源已释放，请选择其他医生或日期',
+  REFUND_DEADLINE_PASSED: '已超过退号时限（就诊前一日 23:00）',
+  REG_STATE_INVALID: '当前预约状态不支持该操作',
+  PATIENT_LIMIT_EXCEEDED: '就诊人数量已达上限（10 人），请先删除不再使用的就诊人',
+  PATIENT_IN_USE: '该就诊人存在未完成的预约，暂不可删除',
   PATIENT_ID_CONFLICT: '该证件号已被使用，请核对后重试',
   PAYMENT_CLOSED: '该支付单已关闭',
-  DUPLICATE_SUBMIT: '正在提交，请勿重复点击',
+  DUPLICATE_SUBMIT: '请求正在处理中，请勿重复提交',
+  SIGN_TOO_EARLY: '未到签到时间（就诊当日 00:00 起可签到）',
+  SIGN_WINDOW_CLOSED: '已超过签到时间（就诊时刻后 30 分钟），或该预约已签到',
 }
 
 /** 错误 → 用户可读文案（未知码用服务端 msg，无 msg 用兜底） */
@@ -231,4 +231,121 @@ export function doctorAvailabilityLabel(dates: DateVo[]): '' | '满诊' | '无�
     return '无号'
   }
   return totalRemain(withSchedule[0].periods) === 0 ? '满诊' : ''
+}
+
+/* ------------------------------ 患者辅助组 / 分诊展示映射（S11） ------------------------------ */
+
+const NOTICE_TYPE_LABELS: Record<string, string> = {
+  BOOK_SUCCESS: '预约成功',
+  PAY_SUCCESS: '支付成功',
+  PAY_TIMEOUT: '支付超时',
+  CANCEL_SUCCESS: '退号成功',
+  SUSPEND_CANCEL: '停诊取消',
+  NOSHOW_RECORD: '爽约记录',
+  BLACKLIST_HIT: '黑名单提醒',
+}
+
+/** D4 消息类型线值 → 中文（契约 §6.4：`type` 返回线值，映射在前端） */
+export function noticeTypeLabel(type?: string | null): string {
+  if (!type) {
+    return ''
+  }
+  return NOTICE_TYPE_LABELS[type] ?? type
+}
+
+const SIGN_TYPE_LABELS: Record<string, string> = {
+  SCAN: '扫码',
+  MANUAL: '手动',
+}
+
+/** E1/E2 签到方式线值 → 中文（未签到时后端给 null） */
+export function signTypeLabel(signType?: string | null): string {
+  if (!signType) {
+    return ''
+  }
+  return SIGN_TYPE_LABELS[signType] ?? signType
+}
+
+const SETTLE_STATUS_LABELS: Record<string, string> = {
+  NONE: '未结算',
+  WAIT_REFUND: '退款处理中',
+  REFUNDED: '已退费',
+}
+
+export function settleStatusLabel(status?: string | null): string {
+  if (!status) {
+    return ''
+  }
+  return SETTLE_STATUS_LABELS[status] ?? status
+}
+
+const REFUND_STATUS_LABELS: Record<string, string> = {
+  WAIT_REFUND: '退款处理中',
+  REFUNDED: '已退款',
+  FAILED: '退款失败，请联系服务台',
+}
+
+export function refundStatusLabel(status?: string | null): string {
+  if (!status) {
+    return ''
+  }
+  return REFUND_STATUS_LABELS[status] ?? status
+}
+
+const CANCEL_TYPE_LABELS: Record<string, string> = {
+  ACTIVE: '主动退号',
+  PASSIVE: '停诊退号',
+}
+
+export function cancelTypeLabel(cancelType?: string | null): string {
+  if (!cancelType) {
+    return ''
+  }
+  return CANCEL_TYPE_LABELS[cancelType] ?? cancelType
+}
+
+/** `yyyy-MM-dd HH:mm:ss` → `MM-DD HH:mm`（消息时间、签到时间用；不参与金额与 id） */
+export function shortDateTime(text?: string | null): string {
+  if (!text) {
+    return ''
+  }
+  const [date, time] = text.replace('T', ' ').split(' ')
+  if (!date) {
+    return ''
+  }
+  const day = date.slice(5)
+  const clock = (time ?? '').slice(0, 5)
+  return clock ? `${day} ${clock}` : day
+}
+
+/** 就诊码只在有效态返回（契约 §4.3）；页面据此决定是否渲染二维码 */
+export function canShowVisitCode(status?: string | null): boolean {
+  return status === 'BOOKED' || status === 'SIGNED' || status === 'COMPLETED'
+}
+
+/** 退号截止：就诊前一日 23:00（毫秒时间戳；日期非法返回 0） */
+export function refundDeadline(visitDate: string): number {
+  const date = new Date(`${visitDate}T00:00:00`)
+  if (Number.isNaN(date.getTime())) {
+    return 0
+  }
+  date.setDate(date.getDate() - 1)
+  date.setHours(23, 0, 0, 0)
+  return date.getTime()
+}
+
+/** 是否已过退号截止（`now` 便于单测） */
+export function refundDeadlinePassed(visitDate: string, now: number = Date.now()): boolean {
+  const deadline = refundDeadline(visitDate)
+  return deadline > 0 && now >= deadline
+}
+
+/** 截止时刻文案：`10月22日 23:00`（详情页把「就诊前一日 23:00」说具体） */
+export function refundDeadlineLabel(visitDate: string): string {
+  const deadline = refundDeadline(visitDate)
+  if (!deadline) {
+    return ''
+  }
+  const date = new Date(deadline)
+  return `${date.getMonth() + 1}月${date.getDate()}日 23:00`
 }

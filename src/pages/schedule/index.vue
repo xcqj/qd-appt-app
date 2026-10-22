@@ -156,7 +156,7 @@ onLoad(() => {
 <template>
   <view class="appt-page schedule">
     <view v-if="!deptId" class="appt-content schedule__body">
-      <PageState :empty="true" empty-text="还没有选择科室" empty-desc="从科室列表进入，才能看到该科室的排班" />
+      <PageState :empty="true" empty-text="未选择科室" empty-desc="请从科室列表进入后查看排班" />
     </view>
 
     <template v-else>
@@ -170,7 +170,7 @@ onLoad(() => {
         :error="error"
         :empty="!loading && !error && rows.length === 0"
         empty-text="当日暂无排班"
-        empty-desc="换一个日期看看，或查看本科室其他医生"
+        empty-desc="请选择其他日期，或查看本科室其他医生"
         :rows="4"
         @retry="reload"
       >

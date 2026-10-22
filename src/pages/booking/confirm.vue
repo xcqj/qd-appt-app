@@ -96,7 +96,7 @@ async function savePatient(): Promise<void> {
     ]
     selectedPatientId.value = created.id
     patientPopup.value = false
-    uni.showToast({ title: '就诊人已添加，可直接提交', icon: 'none' })
+    uni.showToast({ title: '就诊人添加成功', icon: 'none' })
   } catch (e) {
     patientError.value = bizMessage(e)
   } finally {
@@ -119,7 +119,7 @@ async function submit(): Promise<void> {
       patientId: selectedPatientId.value,
     })
     if (result.duplicate) {
-      uni.showToast({ title: '这笔预约已提交过，正在打开支付', icon: 'none' })
+      uni.showToast({ title: '该预约已提交，正在跳转支付', icon: 'none' })
     }
     redirectTo(ROUTES.bookingPayment, {
       paymentNo: result.paymentNo,
@@ -151,7 +151,7 @@ onLoad(async () => {
   <view class="appt-page confirm">
     <view class="appt-content confirm__body">
       <view v-if="missingContext" class="confirm__panel">
-        <PageState :empty="true" empty-text="号源信息已失效" empty-desc="请重新选择时间点后再提交">
+        <PageState :empty="true" empty-text="号源信息已失效" empty-desc="请重新选择就诊时间后再提交">
           <template #empty-action>
             <wd-button size="small" type="primary" @click="goBack">返回上一页</wd-button>
           </template>
@@ -167,7 +167,7 @@ onLoad(async () => {
             </view>
 
             <view v-if="!patients || !patients.length" class="confirm__no-patient">
-              <text class="appt-text">还没有就诊人</text>
+              <text class="appt-text">暂无就诊人</text>
               <text class="appt-weak confirm__no-patient-desc">挂号需绑定就诊人实名信息，先添加一位</text>
               <wd-button size="small" type="primary" @click="openPatientPopup">添加就诊人</wd-button>
             </view>
@@ -216,7 +216,7 @@ onLoad(async () => {
       </view>
       <view class="confirm__submit">
         <wd-button type="primary" :loading="submitting" :disabled="submitting" @click="submit">
-          {{ patients && patients.length ? '确认预约' : '先添加就诊人' }}
+          {{ patients && patients.length ? '确认预约' : '请先添加就诊人' }}
         </wd-button>
       </view>
     </view>
@@ -226,7 +226,7 @@ onLoad(async () => {
     <wd-popup v-model="patientPopup" position="bottom" round :z-index="1000">
       <view class="confirm__sheet">
         <text class="appt-section-title">新增就诊人</text>
-        <text class="appt-weak confirm__sheet-hint">姓名与证件号必须真实一致，演示数据不接入任何真实医疗系统</text>
+        <text class="appt-weak confirm__sheet-hint">请填写与证件一致的就诊人信息；本系统为演示环境，不接入真实医疗系统</text>
 
         <view class="confirm__field">
           <text class="confirm__label">姓名<text class="confirm__required">*</text></text>
@@ -256,7 +256,7 @@ onLoad(async () => {
         <text v-if="patientError" class="confirm__error">{{ patientError }}</text>
 
         <view class="confirm__sheet-actions">
-          <wd-button variant="plain" @click="patientPopup = false">再想想</wd-button>
+          <wd-button variant="plain" @click="patientPopup = false">取消</wd-button>
           <wd-button type="primary" :loading="patientSaving" :disabled="patientSaving" @click="savePatient">保存</wd-button>
         </view>
       </view>

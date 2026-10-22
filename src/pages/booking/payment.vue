@@ -148,8 +148,8 @@ function cancelBooking(): void {
   }
   uni.showModal({
     title: '取消本次预约',
-    content: '取消后号源立即释放，需要重新预约。',
-    cancelText: '再想想',
+    content: '取消后号源立即释放，如仍需就诊请重新预约。',
+    cancelText: '返回',
     confirmText: '确认取消',
     success: (res) => {
       if (!res.confirm) {
@@ -219,10 +219,10 @@ onUnload(() => {
         <view class="appt-card payment__result">
           <view class="payment__result-icon">✓</view>
           <text class="appt-section-title">支付成功</text>
-          <text class="payment__result-text">支付成功，就诊当天请提前 15 分钟到院签到</text>
+          <text class="payment__result-text">支付成功，请于就诊当日提前 15 分钟到院签到</text>
           <MoneyText :amount="amount" size="lg" />
           <view class="payment__result-action">
-            <wd-button type="primary" block @click="goAppointments">查看预约</wd-button>
+            <wd-button type="primary" block @click="goAppointments()">查看预约</wd-button>
           </view>
         </view>
       </view>
@@ -274,7 +274,7 @@ onUnload(() => {
         </view>
 
         <view class="appt-bottom-bar payment__bar">
-          <wd-button type="primary" block :loading="paying || phase === 'PAYING'" :disabled="paying" @click="pay">
+          <wd-button type="primary" block :loading="paying || phase === 'PAYING'" :disabled="paying" @click="pay()">
             {{ phase === 'PAYING' ? '正在确认支付结果' : '立即支付' }}
           </wd-button>
         </view>

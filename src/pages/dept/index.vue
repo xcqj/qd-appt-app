@@ -116,7 +116,7 @@ onShow(() => {
 <template>
   <view class="appt-page dept">
     <view v-if="!booking.hasCampus" class="appt-content dept__body">
-      <PageState :empty="true" empty-text="还没有选择院区" empty-desc="先选院区，才能看到该院区的出诊科室">
+      <PageState :empty="true" empty-text="未选择院区" empty-desc="请先选择就诊院区">
         <template #empty-action>
           <wd-button size="small" type="primary" @click="goCampus">去选择院区</wd-button>
         </template>
@@ -133,7 +133,7 @@ onShow(() => {
         :error="error"
         :empty="isEmpty || listData.length === 0"
         :empty-text="keyword ? '没有匹配的科室' : '该院区暂未开放科室'"
-        :empty-desc="keyword ? '换个关键词试试' : '换个院区看看，或稍后再来'"
+        :empty-desc="keyword ? '请更换关键词后重试' : '请选择其他院区，或稍后重试'"
         :rows="5"
         @retry="run"
       >

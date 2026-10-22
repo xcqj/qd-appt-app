@@ -6,7 +6,7 @@ withDefaults(
   }>(),
   {
     title: '功能建设中',
-    desc: '该页面将在后续切片实现',
+    desc: '该功能将在后续版本开放',
   },
 )
 </script>

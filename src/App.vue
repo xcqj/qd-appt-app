@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { onLaunch } from '@dcloudio/uni-app'
+import { onLaunch, onShow } from '@dcloudio/uni-app'
 
 import { bootstrap } from '@/bootstrap'
+import { refreshUnreadBadge } from '@/composables/useUnreadBadge'
 
 onLaunch(() => {
   bootstrap()
+})
+
+// 回到前台时刷新「消息」tab 未读角标（未登录时内部自动清零，不会报错）
+onShow(() => {
+  void refreshUnreadBadge()
 })
 </script>
 

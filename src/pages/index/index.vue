@@ -82,8 +82,8 @@ function pickShortcut(dept: DeptTreeVo): void {
   <view class="appt-page home">
     <view class="home__hero">
       <text class="home__title">预约挂号</text>
-      <text class="home__sub">选择院区开始预约 · 演示数据全部虚构</text>
-      <text v-if="!userStore.isLogin" class="home__link" @click="goLogin">未登录，点击去登录 ›</text>
+      <text class="home__sub">选择就诊院区，开始预约挂号 · 演示数据均为虚构</text>
+      <text v-if="!userStore.isLogin" class="home__link" @click="goLogin">未登录，点击登录 ›</text>
       <text v-else class="home__link" @click="goMine">{{ userStore.displayName }} · 我的预约 ›</text>
     </view>
 
@@ -111,7 +111,7 @@ function pickShortcut(dept: DeptTreeVo): void {
           >
             <view class="home__campus-info">
               <text class="appt-title">{{ campus.name }}</text>
-              <text class="home__campus-addr">{{ campus.address || '地址待补充' }}</text>
+              <text class="home__campus-addr">{{ campus.address || '地址信息暂缺' }}</text>
             </view>
             <text class="home__chevron">›</text>
           </view>
@@ -132,7 +132,7 @@ function pickShortcut(dept: DeptTreeVo): void {
         </view>
       </view>
 
-      <text class="home__footnote">演示数据全部虚构，支付为模拟渠道，不提供真实医疗服务。</text>
+      <text class="home__footnote">本系统为演示环境，数据均为虚构，支付走模拟渠道，不提供真实医疗服务。</text>
     </view>
   </view>
 </template>

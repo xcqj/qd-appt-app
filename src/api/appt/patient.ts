@@ -7,9 +7,11 @@
 import type {
   BookForm,
   BookResultVo,
+  PatientEditForm,
   PatientForm,
   PatientVo,
   PaymentVo,
+  RegistrationCancelVo,
   RegistrationDetailVo,
   RegistrationQuery,
   RegistrationRowVo,
@@ -57,9 +59,22 @@ export function listRegistrations(params: RegistrationQuery): Promise<PageResult
   })
 }
 
-/** B3 预约详情（本片只用它取 `payment.paymentNo`，不渲染详情页） */
+/** B3 预约详情（仅本人可见；`visitCode` 只在有效态返回） */
 export function getRegistrationDetail(registrationId: string): Promise<RegistrationDetailVo> {
   return request<RegistrationDetailVo>({ url: `/appt/patient/registration/${registrationId}`, silent: true })
+}
+
+/**
+ * B5 退号（仅 `BOOKED` 且未过「就诊前一日 23:00」）
+ *
+ * 已支付的单会在同事务内建退款单（`settleStatus=WAIT_REFUND`），渠道退款在事务提交后异步走。
+ */
+export function cancelRegistration(registrationId: string): Promise<RegistrationCancelVo> {
+  return request<RegistrationCancelVo>({
+    url: `/appt/patient/registration/${registrationId}/cancel`,
+    method: 'POST',
+    silent: true,
+  })
 }
 
 /**
@@ -80,4 +95,23 @@ export function listPatients(): Promise<PatientVo[]> {
 /** B7 新增就诊人 */
 export function addPatient(form: PatientForm): Promise<PatientVo> {
   return request<PatientVo>({ url: '/appt/patient/patient', method: 'POST', data: { ...form }, silent: true })
+}
+
+/**
+ * B8 修改就诊人
+ *
+ * `idNo` 留空 = 不修改；**改了 `idType` 就必须同时带 `idNo`**（后端 400）。
+ */
+export function updatePatient(id: string, form: PatientEditForm): Promise<PatientVo> {
+  return request<PatientVo>({ url: `/appt/patient/patient/${id}`, method: 'PUT', data: { ...form }, silent: true })
+}
+
+/** B9 删除就诊人（存在 `WAIT_PAY/BOOKED/SIGNED` 单时后端返回 `PATIENT_IN_USE`） */
+export function deletePatient(id: string): Promise<void> {
+  return request<void>({ url: `/appt/patient/patient/${id}`, method: 'DELETE', silent: true })
+}
+
+/** B10 设默认（幂等；同事务只保留一条默认） */
+export function setDefaultPatient(id: string): Promise<void> {
+  return request<void>({ url: `/appt/patient/patient/${id}/default`, method: 'PUT', silent: true })
 }

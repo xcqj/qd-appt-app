@@ -24,6 +24,7 @@ declare module 'vue' {
     WdEmpty: typeof import('@wot-ui/ui/components/wd-empty/wd-empty.vue')['WdEmpty']
     WdInput: typeof import('@wot-ui/ui/components/wd-input/wd-input.vue')['WdInput']
     WdPopup: typeof import('@wot-ui/ui/components/wd-popup/wd-popup.vue')['WdPopup']
+    WdQrCode: typeof import('@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue')['WdQrCode']
     WdSearch: typeof import('@wot-ui/ui/components/wd-search/wd-search.vue')['WdSearch']
     WdSkeleton: typeof import('@wot-ui/ui/components/wd-skeleton/wd-skeleton.vue')['WdSkeleton']
   }

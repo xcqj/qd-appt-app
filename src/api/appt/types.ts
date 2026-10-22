@@ -129,16 +129,40 @@ export interface RegistrationRowVo {
   cancelType?: string
 }
 
-/** B3 预约详情里前端用到的子集（本片只取 payment 的 paymentNo） */
+/** B3 预约详情（S11 起字段级；`staff` 里**没有 deptId**，再次预约只能经医生主页拿） */
 export interface RegistrationDetailVo {
   registrationId: string
   registrationNo: string
   status: string
+  settleStatus?: string
+  /** 已退号才有：ACTIVE / PASSIVE */
+  cancelType?: string
   visitDate: string
   period: string
+  /** 已加 @JsonFormat(HH:mm)，仍建议过 timePointText() 兜底 */
   timePoint: string
   fee: string
+  /** 已签到才有 */
+  signTime?: string
+  /** 就诊码：仅 BOOKED / SIGNED / COMPLETED 返回；**不得用 registrationNo 冒替** */
+  visitCode?: string
+  patient?: {
+    patientId: string
+    name: string
+    idType: string
+    /** 脱敏串，完整证件号永不下发 */
+    idNoMasked: string
+  }
+  staff?: {
+    staffId: string
+    name: string
+    title: string
+    deptName: string
+    campusName: string
+  }
   payment?: PaymentBriefVo
+  /** 有退款单才有 */
+  refund?: RefundBriefVo
 }
 
 /** B3 内嵌支付单摘要 */
@@ -148,6 +172,28 @@ export interface PaymentBriefVo {
   status: string
   expireTime: string
   payTime?: string
+}
+
+/** B3 内嵌退款单摘要 */
+export interface RefundBriefVo {
+  refundNo: string
+  amount: string
+  /** WAIT_REFUND / REFUNDED / FAILED */
+  status: string
+  reason?: string
+}
+
+/** B5 退号回参（已支付时带退款单信息） */
+export interface RegistrationCancelVo {
+  registrationId: string
+  registrationNo: string
+  status: string
+  /** ACTIVE / PASSIVE */
+  cancelType?: string
+  /** NONE / WAIT_REFUND / REFUNDED */
+  settleStatus?: string
+  refundNo?: string
+  refundStatus?: string
 }
 
 /** B6 就诊人（证件号只给脱敏串） */
@@ -181,6 +227,85 @@ export interface PaymentVo {
   expireTime: string
   payTime?: string
   tradeNo?: string
+}
+
+/* ------------------------------ 患者辅助组 D1–D6 ------------------------------ */
+
+/** D1 我的医生（收藏行；按收藏时间倒序） */
+export interface FavoriteStaffVo {
+  staffId: string
+  name: string
+  avatar?: string
+  avatarUrl?: string
+  title: string
+  degree?: string
+  /** NORMAL / NIGHT / EXPERT */
+  clinicType?: string
+  deptName?: string
+  campusName?: string
+  /** yyyy-MM-dd HH:mm:ss */
+  favoriteTime?: string
+}
+
+/** D4 站内消息 */
+export interface NoticeVo {
+  noticeId: string
+  /** BOOK_SUCCESS / PAY_SUCCESS / PAY_TIMEOUT / CANCEL_SUCCESS / SUSPEND_CANCEL / NOSHOW_RECORD / BLACKLIST_HIT */
+  type: string
+  title: string
+  content: string
+  readFlag: boolean
+  /** yyyy-MM-dd HH:mm:ss */
+  createTime: string
+}
+
+/** D5 未读数 */
+export interface NoticeUnreadVo {
+  unread: number
+}
+
+/* ------------------------------ 分诊组 E1–E3 ------------------------------ */
+
+/** E1 扫码签到 / E2 手动补签入参（服务端两者共用同一 BO） */
+export interface TriageSignBody {
+  registrationNo?: string
+  registrationId?: string
+}
+
+/** E1/E2 签到结果 */
+export interface SignResultVo {
+  registrationId: string
+  registrationNo: string
+  patientName: string
+  staffName: string
+  visitDate: string
+  period: string
+  /** 完整时间戳（该 VO 未加 @JsonFormat），展示统一过 timePointText() */
+  timePoint: string
+  signTime?: string
+  /** SCAN / MANUAL */
+  signType?: string
+}
+
+/** E3 当日签到列表行（排序：院区 → 科室 → 时刻 → id） */
+export interface SignListVo {
+  registrationId: string
+  registrationNo: string
+  patientId: string
+  patientName: string
+  staffId: string
+  staffName: string
+  deptId: string
+  deptName: string
+  campusId: string
+  campusName: string
+  visitDate: string
+  period: string
+  timePoint: string
+  status: string
+  signTime?: string
+  /** SCAN / MANUAL；未签到为 null */
+  signType?: string
 }
 
 /* ------------------------------ 输入侧类型（Form / Query） ------------------------------ */
@@ -226,6 +351,38 @@ export interface PatientForm {
   idType: string
   idNo: string
   isDefault: boolean
+}
+
+/**
+ * B8 修改就诊人请求体
+ *
+ * `idNo` 留空 = 不修改；`idType` 若变更必须同时带 `idNo`（后端 400：
+ * 类型与摘要必须成对变更，否则唯一键语义错位）。
+ */
+export interface PatientEditForm {
+  name: string
+  idType: string
+  idNo?: string
+}
+
+/** D1 我的医生查询入参 */
+export interface FavoriteQuery {
+  pageNum?: number
+  pageSize?: number
+}
+
+/** D4 消息查询入参（`readFlag` 不传 = 全部） */
+export interface NoticeQuery {
+  readFlag?: boolean
+  pageNum?: number
+  pageSize?: number
+}
+
+/** E3 当日签到列表查询入参（`date` 缺省今天，格式非法后端 400） */
+export interface SignListQuery {
+  date?: string
+  pageNum?: number
+  pageSize?: number
 }
 
 /* ------------------------------ 认证相关（沿用 E5） ------------------------------ */
