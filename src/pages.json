@@ -113,6 +113,12 @@
       "style": {
         "navigationBarTitleText": "当日签到"
       }
+    },
+    {
+      "path": "pages/triage/suspend",
+      "style": {
+        "navigationBarTitleText": "停诊上报"
+      }
     }
   ],
   "globalStyle": {

@@ -29,6 +29,7 @@ export const ROUTES = {
   favoriteList: '/pages/favorite/index',
   triageSign: '/pages/triage/sign/index',
   triageList: '/pages/triage/list',
+  triageSuspend: '/pages/triage/suspend',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]

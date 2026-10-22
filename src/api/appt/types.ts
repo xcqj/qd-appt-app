@@ -287,6 +287,31 @@ export interface SignResultVo {
   signType?: string
 }
 
+/**
+ * E5 停诊上报请求体（契约 §7.5）
+ *
+ * `scopeValue` 三种拼法：`SCHEDULE` → scheduleId；`STAFF_DATE` → `yyyy-MM-dd`；
+ * `CAMPUS_DATE` → `campusId:yyyy-MM-dd`。区间可另传 `endDate`（与 scopeValue 内的 `~` 二选一）。
+ * 单午别停诊不收 `endDate`（后端会拒绝）。
+ */
+export interface SuspendReportBody {
+  staffId?: string
+  scopeType: 'SCHEDULE' | 'STAFF_DATE' | 'CAMPUS_DATE'
+  scopeValue: string
+  endDate?: string
+  /** 必填，会出现在患者站内信里 */
+  reason: string
+}
+
+/** E5 停诊上报回参（同范围已有待处理登记时 `duplicate=true`，批号复用） */
+export interface SuspendReportVo {
+  suspendId: string
+  batchNo: string
+  status: string
+  duplicate: boolean
+  scopeValue: string
+}
+
 /** E3 当日签到列表行（排序：院区 → 科室 → 时刻 → id） */
 export interface SignListVo {
   registrationId: string

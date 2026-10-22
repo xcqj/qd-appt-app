@@ -4,7 +4,14 @@
  * 硬约束：**请求不带 `campusId`**，数据范围由服务端按账号解析（红线 10）。
  * 前端只负责「扫码拿到 registrationNo」或「手输单号」，不判断窗口。
  */
-import type { SignListQuery, SignListVo, SignResultVo, TriageSignBody } from '@/api/appt/types'
+import type {
+  SignListQuery,
+  SignListVo,
+  SignResultVo,
+  SuspendReportBody,
+  SuspendReportVo,
+  TriageSignBody,
+} from '@/api/appt/types'
 import type { PageResult } from '@/types/api'
 import { request } from '@/utils/request'
 
@@ -34,6 +41,21 @@ export function signByScan(body: TriageSignBody): Promise<SignResultVo> {
 export function signManually(body: TriageSignBody): Promise<SignResultVo> {
   return request<SignResultVo>({
     url: '/appt/triage/sign/manual',
+    method: 'POST',
+    data: { ...body },
+    silent: true,
+  })
+}
+
+/**
+ * E5 停诊上报（只登记，不执行退号退款）
+ *
+ * 同范围若已有「待处理」登记，后端直接复用批号并返回 `duplicate=true`（幂等）。
+ * 真正的批量退号 / 退款 / 通知由后台「停诊处理」执行。
+ */
+export function reportSuspend(body: SuspendReportBody): Promise<SuspendReportVo> {
+  return request<SuspendReportVo>({
+    url: '/appt/triage/suspend',
     method: 'POST',
     data: { ...body },
     silent: true,

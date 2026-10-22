@@ -27,5 +27,6 @@ declare module 'vue' {
     WdQrCode: typeof import('@wot-ui/ui/components/wd-qr-code/wd-qr-code.vue')['WdQrCode']
     WdSearch: typeof import('@wot-ui/ui/components/wd-search/wd-search.vue')['WdSearch']
     WdSkeleton: typeof import('@wot-ui/ui/components/wd-skeleton/wd-skeleton.vue')['WdSkeleton']
+    WdTextarea: typeof import('@wot-ui/ui/components/wd-textarea/wd-textarea.vue')['WdTextarea']
   }
 }

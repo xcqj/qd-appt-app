@@ -13,9 +13,9 @@ defineProps<{ active: 'sign' | 'list' | 'extra' | 'suspend' }>()
 const items = [
   { key: 'sign', label: '签到', path: ROUTES.triageSign, hint: '' },
   { key: 'list', label: '当日', path: ROUTES.triageList, hint: '' },
-  // 加号依赖 E4（后端未实现）；停诊上报不在 S11 清单：都保留入口但明确「暂未开放」
+  // 加号依赖 E4（后端未实现）：保留入口但明确「暂未开放」
   { key: 'extra', label: '加号', path: '', hint: '加号登记功能暂未开放' },
-  { key: 'suspend', label: '停诊', path: '', hint: '停诊上报功能暂未开放' },
+  { key: 'suspend', label: '停诊', path: ROUTES.triageSuspend, hint: '' },
 ] as const
 
 function go(path: string, hint: string) {
