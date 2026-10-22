@@ -34,9 +34,15 @@ pnpm dev:h5           # 2) 起 H5：http://localhost:8084
 小程序端（可选）：
 
 ```bash
-pnpm dev:mp-weixin    # 产物 dist/dev/mp-weixin，用微信开发者工具打开
+# 源码与开发者工具在同一系统：产物写在本仓 dist/dev/mp-weixin
+pnpm dev:mp-weixin
+
+# WSL 开发：产物直接写 Windows 盘，开发者工具导入 D:\programming\project\appt-app
+pnpm dev:mp-wsl
 ```
 
+- WSL 里的源码在 `/home/...`，Windows 版开发者工具打不开；**不要**用 `\\wsl.localhost\...` UNC 路径（文件监听失效、编译变慢）。用 `dev:mp-wsl` 把产物输出到 Windows 盘即可正常热编译；
+- `dev:mp-wsl` 同时覆盖 `VITE_APP_BASE_API=http://localhost:8082`——小程序端不走 vite 代理，`.env.development` 里的 `/dev-api` 前缀无效。换输出目录或后端地址：`APPT_MP_OUT_DIR=... APPT_MP_BASE_API=... pnpm dev:mp-wsl`；
 - 开发者工具需勾选 **不校验合法域名、web-view、TLS**（本地接口是 `http://127.0.0.1:8082`）；
 - 仓里 `manifest.json` 的 `mp-weixin.appid` 是 `touristappid` 占位；真机调试请在本地改成自己的 AppID，**不要提交**。
 

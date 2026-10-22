@@ -22,7 +22,8 @@
 |---|---|
 | H5 dev | `http://localhost:8084`（`vite.config.ts` 写死，避开后端 8082 / admin 8083） |
 | 请求前缀 | `.env.development` 的 `VITE_APP_BASE_API=/dev-api` → 代理到 `127.0.0.1:8082` |
-| 小程序 | `BASE_API` 需置空并配合法域名；本地调试勾「不校验合法域名」 |
+| 小程序（WSL 开发） | `pnpm dev:mp-wsl` → 产物写 `/mnt/d/programming/project/appt-app`（即 `D:\programming\project\appt-app`），微信开发者工具导入该目录；路径 / 后端地址可用 `APPT_MP_OUT_DIR` / `APPT_MP_BASE_API` 覆盖 |
+| 小程序请求地址 | **不走 vite 代理**：`.env.development` 的 `/dev-api` 在小程序端无效，必须是绝对地址（`dev:mp-wsl` 默认 `http://localhost:8082`）；devtools 勾「不校验合法域名」 |
 
 ## 3. 质量门槛（顺序不可换）
 
