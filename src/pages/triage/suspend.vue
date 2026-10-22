@@ -55,6 +55,22 @@ const selectedStaff = computed(() => staffOptions.value.find((item) => item.staf
 const periodOptions = computed(() => selectedStaff.value?.periods ?? [])
 const selectedPeriod = computed(() => periodOptions.value.find((item) => item.period === period.value) ?? null)
 
+/** 当前选择的可读摘要：结果卡里回显，避免「批号对应的是谁」说不清 */
+const selectionSummary = computed(() => {
+  const campusName = campusOptions.value.find((item) => item.campusId === campusId.value)?.name ?? ''
+  const deptName = deptOptions.value.find((item) => item.deptId === deptId.value)?.name ?? ''
+  const staffName = selectedStaff.value?.name ?? ''
+  const dateText = endDate.value !== startDate.value ? `${startDate.value} ~ ${endDate.value}` : startDate.value
+  if (scopeType.value === 'CAMPUS_DATE') {
+    return `${campusName} · ${dateText}`
+  }
+  if (scopeType.value === 'STAFF_DATE') {
+    return `${campusName} · ${deptName} · ${staffName} · ${dateText}`
+  }
+  const periodText = selectedPeriod.value ? periodLabel(selectedPeriod.value.period) : ''
+  return `${campusName} · ${deptName} · ${staffName} · ${dateText} ${periodText}`
+})
+
 function today(offset = 0): string {
   const date = new Date()
   date.setDate(date.getDate() + offset)
@@ -131,16 +147,20 @@ function pickScope(key: 'CAMPUS_DATE' | 'STAFF_DATE' | 'SCHEDULE'): void {
 function pickDept(id: string): void {
   deptId.value = id
   formError.value = ''
+  // 换了科室/医生/午别就是新的上报对象，旧批号结果必须清掉，避免误读成「当前选择已上报」
+  result.value = null
 }
 
 function pickStaff(id: string): void {
   staffId.value = id
   period.value = ''
   formError.value = ''
+  result.value = null
 }
 
 function pickPeriod(value: string): void {
   period.value = value
+  result.value = null
 }
 
 function onStartChange(event: { detail: { value: string } }): void {
@@ -380,6 +400,10 @@ onShow(() => {
         <view class="appt-row">
           <text class="appt-sub">处理状态</text>
           <text class="appt-text">待处理</text>
+        </view>
+        <view class="appt-row">
+          <text class="appt-sub">停诊对象</text>
+          <text class="appt-text">{{ selectionSummary }}</text>
         </view>
         <view class="appt-row">
           <text class="appt-sub">范围编码</text>
