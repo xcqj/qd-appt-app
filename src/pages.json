@@ -31,6 +31,54 @@
       }
     },
     {
+      "path": "pages/campus/index",
+      "style": {
+        "navigationBarTitleText": "选择院区"
+      }
+    },
+    {
+      "path": "pages/dept/index",
+      "style": {
+        "navigationBarTitleText": "选择科室"
+      }
+    },
+    {
+      "path": "pages/doctor/list",
+      "style": {
+        "navigationBarTitleText": "医生列表"
+      }
+    },
+    {
+      "path": "pages/doctor/detail",
+      "style": {
+        "navigationBarTitleText": "医生主页"
+      }
+    },
+    {
+      "path": "pages/schedule/index",
+      "style": {
+        "navigationBarTitleText": "排班"
+      }
+    },
+    {
+      "path": "pages/schedule/slots",
+      "style": {
+        "navigationBarTitleText": "选择时间"
+      }
+    },
+    {
+      "path": "pages/booking/confirm",
+      "style": {
+        "navigationBarTitleText": "确认预约"
+      }
+    },
+    {
+      "path": "pages/booking/payment",
+      "style": {
+        "navigationBarTitleText": "支付"
+      }
+    },
+    {
       "path": "pages/triage/sign/index",
       "style": {
         "navigationBarTitleText": "分诊签到"

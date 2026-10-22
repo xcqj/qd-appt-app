@@ -11,8 +11,20 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    DateStrip: typeof import('./components/DateStrip.vue')['default']
+    DoctorCard: typeof import('./components/DoctorCard.vue')['default']
     EmptyState: typeof import('./components/EmptyState.vue')['default']
+    MoneyText: typeof import('./components/MoneyText.vue')['default']
+    PageState: typeof import('./components/PageState.vue')['default']
+    SlotGrid: typeof import('./components/SlotGrid.vue')['default']
+    StatusTag: typeof import('./components/StatusTag.vue')['default']
     TriageTabbar: typeof import('./components/TriageTabbar.vue')['default']
     WdButton: typeof import('@wot-ui/ui/components/wd-button/wd-button.vue')['WdButton']
+    WdCountDown: typeof import('@wot-ui/ui/components/wd-count-down/wd-count-down.vue')['WdCountDown']
+    WdEmpty: typeof import('@wot-ui/ui/components/wd-empty/wd-empty.vue')['WdEmpty']
+    WdInput: typeof import('@wot-ui/ui/components/wd-input/wd-input.vue')['WdInput']
+    WdPopup: typeof import('@wot-ui/ui/components/wd-popup/wd-popup.vue')['WdPopup']
+    WdSearch: typeof import('@wot-ui/ui/components/wd-search/wd-search.vue')['WdSearch']
+    WdSkeleton: typeof import('@wot-ui/ui/components/wd-skeleton/wd-skeleton.vue')['WdSkeleton']
   }
 }

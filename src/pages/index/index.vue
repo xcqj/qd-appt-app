@@ -1,139 +1,255 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+/**
+ * 9.1 首页（DESIGN §9.1）
+ *
+ * 信息层级：品牌区（唯一渐变）→ 院区卡 ×3 → 快捷科室（仅「选过院区」时出现）→ 原生 tab。
+ * 字段：A1（campusId / name / address）；快捷科室用 A2 的一级节点（必须带上次院区 campusId）。
+ */
+import { onShow } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
 
-import type { CampusVo } from '@/api/appt/types'
-import { listCampus } from '@/api/appt/public'
-import { navigateTo, ROUTES } from '@/router/routes'
+import type { CampusVo, DeptTreeVo } from '@/api/appt/types'
+import { getDeptTree, listCampus } from '@/api/appt/public'
+import PageState from '@/components/PageState.vue'
+import { useAsyncData } from '@/composables/useAsyncData'
+import { navigateTo, ROUTES, switchTab } from '@/router/routes'
+import type { CampusRef } from '@/store/booking'
+import { useBookingStore } from '@/store/booking'
 import { useUserStore } from '@/store/user'
 
+const booking = useBookingStore()
 const userStore = useUserStore()
 
-const loading = ref(false)
-const campuses = ref<CampusVo[]>([])
-const errorText = ref('')
+const { data: campuses, loading, error, isEmpty, run } = useAsyncData<CampusVo[]>(
+  listCampus,
+  (list) => list.length === 0,
+)
 
-async function load() {
-  loading.value = true
-  errorText.value = ''
+const shortcuts = ref<DeptTreeVo[]>([])
+const lastCampus = ref<CampusRef | null>(null)
+
+const shortcutTitle = computed(() =>
+  lastCampus.value ? `${lastCampus.value.name} · 快捷科室` : '快捷科室',
+)
+
+/** A2 的 campusId 必填；没选过院区就整块不渲染（不留空壳） */
+async function loadShortcuts(): Promise<void> {
+  const cached = booking.restoreLastCampus()
+  lastCampus.value = cached
+  if (!cached) {
+    shortcuts.value = []
+    return
+  }
   try {
-    campuses.value = await listCampus()
-  } catch (e) {
-    errorText.value = e instanceof Error ? e.message : '加载失败'
-  } finally {
-    loading.value = false
+    const tree = await getDeptTree(cached.campusId)
+    shortcuts.value = tree.slice(0, 4)
+  } catch {
+    shortcuts.value = []
   }
 }
 
-onMounted(load)
+onShow(() => {
+  void run()
+  void loadShortcuts()
+})
 
-function goLogin() {
+function goLogin(): void {
   navigateTo(ROUTES.login)
+}
+
+function goMine(): void {
+  switchTab(ROUTES.registration)
+}
+
+function goCampus(): void {
+  navigateTo(ROUTES.campus)
+}
+
+function pickCampus(campus: CampusVo): void {
+  booking.setCampus({ campusId: campus.campusId, name: campus.name, address: campus.address })
+  navigateTo(ROUTES.dept)
+}
+
+function pickShortcut(dept: DeptTreeVo): void {
+  if (lastCampus.value) {
+    booking.setCampus(lastCampus.value)
+  }
+  navigateTo(ROUTES.dept, { rootId: dept.deptId })
 }
 </script>
 
 <template>
-  <view class="page">
-    <view class="hero">
-      <view class="hero__title">预约挂号</view>
-      <view class="hero__desc">选择院区开始 · 演示数据全部虚构</view>
-      <view v-if="!userStore.isLogin" class="hero__tip" @click="goLogin">未登录，点击去登录 ›</view>
+  <view class="appt-page home">
+    <view class="home__hero">
+      <text class="home__title">预约挂号</text>
+      <text class="home__sub">选择院区开始预约 · 演示数据全部虚构</text>
+      <text v-if="!userStore.isLogin" class="home__link" @click="goLogin">未登录，点击去登录 ›</text>
+      <text v-else class="home__link" @click="goMine">{{ userStore.displayName }} · 我的预约 ›</text>
     </view>
 
-    <view v-if="loading" class="hint">加载中…</view>
-    <view v-else-if="errorText" class="hint hint--error">
-      {{ errorText }}
-      <wd-button size="small" type="primary" plain custom-class="mt-2" @click="load">重试</wd-button>
-    </view>
-
-    <view v-else class="campus-list">
-      <view v-for="item in campuses" :key="item.campusId" class="campus-card">
-        <view class="campus-card__name">{{ item.name }}</view>
-        <view class="campus-card__addr">{{ item.address || '地址待补充' }}</view>
+    <view class="appt-content home__body">
+      <view class="home__section">
+        <text class="appt-section-title">选择院区</text>
+        <text class="appt-link" @click="goCampus">切换院区</text>
       </view>
-      <view v-if="!campuses.length" class="hint">暂无院区数据</view>
-    </view>
 
-    <view class="footnote">
-      本页数据来自 <text class="mono">GET /appt/public/campus/list</text>（匿名可访问），
-      用于验证 8084 → /dev-api → 8082 代理与请求封装。
+      <PageState
+        :loading="loading"
+        :error="error"
+        :empty="isEmpty"
+        empty-text="暂无可预约院区"
+        empty-desc="请稍后重试，或联系门诊服务台确认放号时间"
+        :rows="3"
+        @retry="run"
+      >
+        <view class="home__campuses">
+          <view
+            v-for="campus in campuses || []"
+            :key="campus.campusId"
+            class="appt-card home__campus appt-press"
+            @click="pickCampus(campus)"
+          >
+            <view class="home__campus-info">
+              <text class="appt-title">{{ campus.name }}</text>
+              <text class="home__campus-addr">{{ campus.address || '地址待补充' }}</text>
+            </view>
+            <text class="home__chevron">›</text>
+          </view>
+        </view>
+      </PageState>
+
+      <view v-if="shortcuts.length" class="home__shortcuts">
+        <text class="appt-section-title">{{ shortcutTitle }}</text>
+        <view class="home__grid">
+          <view
+            v-for="dept in shortcuts"
+            :key="dept.deptId"
+            class="home__shortcut appt-press"
+            @click="pickShortcut(dept)"
+          >
+            {{ dept.name }}
+          </view>
+        </view>
+      </view>
+
+      <text class="home__footnote">演示数据全部虚构，支付为模拟渠道，不提供真实医疗服务。</text>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-.page {
-  padding: 32rpx 32rpx 60rpx;
-}
+.home {
+  padding-bottom: 40rpx;
 
-.hero {
-  padding: 40rpx 32rpx;
-  border-radius: 24rpx;
-  background: linear-gradient(135deg, #1f7a8c, #2a9d8f);
-  color: #fff;
+  /* 唯一渐变：干净通栏色块，无装饰圆点 / 波纹 */
+  &__hero {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 240rpx;
+    padding: 0 32rpx;
+    background: linear-gradient(135deg, #1f7a8c 0%, #2a9d8f 100%);
+  }
 
   &__title {
-    font-size: 44rpx;
+    font-size: 56rpx;
     font-weight: 700;
+    line-height: 1.2;
+    color: #ffffff;
   }
 
-  &__desc {
+  &__sub {
     margin-top: 12rpx;
     font-size: 26rpx;
-    opacity: 0.9;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
   }
 
-  &__tip {
-    margin-top: 24rpx;
+  &__link {
+    margin-top: 16rpx;
     font-size: 26rpx;
+    color: #ffffff;
     text-decoration: underline;
   }
-}
 
-.campus-list {
-  margin-top: 28rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-}
-
-.campus-card {
-  padding: 28rpx 24rpx;
-  border-radius: 20rpx;
-  background: #fff;
-
-  &__name {
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #1f2d3d;
+  &__body {
+    padding-top: 32rpx;
   }
 
-  &__addr {
+  &__section {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  &__campuses {
+    margin-top: 20rpx;
+  }
+
+  &__campus {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    min-height: 116rpx;
+
+    & + & {
+      margin-top: 20rpx;
+    }
+  }
+
+  &__campus-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__campus-addr {
     margin-top: 8rpx;
     font-size: 26rpx;
-    color: #8a94a6;
+    color: var(--appt-text-weak);
   }
-}
 
-.hint {
-  margin-top: 40rpx;
-  text-align: center;
-  font-size: 26rpx;
-  color: #8a94a6;
-
-  &--error {
-    color: #d14343;
+  &__chevron {
+    flex: none;
+    margin-left: 16rpx;
+    font-size: 36rpx;
+    color: var(--appt-text-weak);
   }
-}
 
-.footnote {
-  margin-top: 48rpx;
-  font-size: 24rpx;
-  color: #9aa4b2;
-  line-height: 1.7;
-}
+  &__shortcuts {
+    margin-top: 40rpx;
+  }
 
-.mono {
-  font-family: monospace;
-  color: #1f7a8c;
+  &__grid {
+    display: flex;
+    flex-wrap: wrap;
+    margin-top: 20rpx;
+    border-radius: 24rpx;
+    background-color: var(--appt-surface);
+    box-shadow: var(--appt-shadow-card);
+  }
+
+  &__shortcut {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 25%;
+    height: 112rpx;
+    padding: 0 8rpx;
+    font-size: 26rpx;
+    color: var(--appt-text);
+    text-align: center;
+  }
+
+  &__footnote {
+    display: block;
+    margin-top: 40rpx;
+    font-size: 20rpx;
+    line-height: 1.6;
+    color: var(--appt-text-weak);
+  }
 }
 </style>

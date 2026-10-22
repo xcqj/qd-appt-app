@@ -195,15 +195,19 @@
 
 > 每屏结构：**目标 → 信息层级 → 布局 → 组件 → 四态 → 字段出处 → Stitch prompt**。
 > 字段出处指向 `../docs/api-contract.md`（A1–A7 公开组、B1–B3 患者组），**不得出现契约里没有的字段**（评分、距离、号源总数等一律不做）。
+> **与 Stitch 冲突时一律以本文为准（2026-10-22 补）**：`appt` 项目的设计系统实例（`assets/13bb7725…`）把 hero 写成 `240px`、状态色写成 `#2A9D8F / #E76F51 / #CBD2D9`、卡片间距 `24rpx`、字体写成 Plus Jakarta Sans、分隔线写成 `rgba(31,45,61,.04)`、并给 hero 加了搜索框与院区选择器——**这些都不采用**，正解见 §2 / §3 / §4 与 §9.1 / §9.2。Stitch prompt 只用来取版式灵感，字段与文案以各屏「字段」行与 §8 为准。
+> **尺寸单位纪律**：本文所有尺寸都是 `rpx`（750 设计宽）。Stitch 出图用 px，**1px = 2rpx**；凡见到 `240px` 一律按 `240rpx` 落实现（首页品牌区最终高度 = 240rpx，即 120px）。
 
 ### 9.1 首页
 
 - **目标**：让患者 3 秒内知道「在哪家医院、能约什么、下一步点哪」。
-- **信息层级**：品牌区（标题 + 副标题 + 登录态）→ 院区快捷入口 → 常用科室 → 底部 tab。
-- **布局**：品牌区 240rpx 高、渐变、圆角 0（通栏）；内容区 32rpx 边距；院区卡 3 张纵向堆叠，每张 116rpx 高；科室入口 4 列 `wd-grid`。
+- **信息层级**：品牌区（标题 + 副标题 + 登录态）→ 院区卡（3 张）→ 快捷科室（仅已选过院区时出现）→ 底部原生 tab。
+- **布局**：品牌区 **240rpx 高**（不是 240px）、渐变、圆角 0（通栏）；内容区 32rpx 边距；院区卡 3 张纵向堆叠，每张 116rpx 高；快捷科室 4 列 `wd-grid`。
 - **组件**：品牌区（自写）、`view.card`、`wd-grid`、`wd-cell`、`wd-skeleton`。
 - **四态**：加载（骨架 ×3）/ 正常（3 院区）/ 空（「暂无可预约院区」+ 重试）/ 错误（错误文案 + 重试按钮）。
-- **字段**：`campusId / name / address`（A1）。
+- **字段**：`campusId / name / address`（A1）；快捷科室用 `deptId / name`（A2，**必须带上次所选院区的 `campusId`**）。
+- **快捷科室的数据前提（2026-10-22 补）**：A2 的 `campusId` 是必填项，而首页本身没有院区上下文 → 只在「用户此前选过院区」（`store/booking` 持久化）时才请求 A2 并展示一级科室前 4 项；**从未选过院区就整块不渲染**（不留空壳）。该区块请求失败时整块隐藏，不影响院区入口主内容。
+- **底部 tab 用原生 tabBar**：`pages.json` 的 `tabBar` 只能文字（不能加图标），Stitch 出图的「图标 + 文字」自绘底栏不采用。
 - **Stitch prompt**：
 
 ```text
@@ -226,7 +230,8 @@ card-inside-card, 3-column equal feature cards, stock-photo collage.
 - **布局**：顶部一行说明「选择就诊院区」；每个院区一张横向卡：左 120rpx 封面（`#EEF2F6` 占位）、右名称 + 地址；选中态左边 4rpx 主色竖条。
 - **组件**：`view.card`、`wd-img`、`wd-tag`（选中显示「当前」）。
 - **四态**：同首页（骨架 ×3）。
-- **字段**：`campusId / name / address / coverUrl`（A1；`coverUrl` 为空时用浅表面占位，不拉外链图）。
+- **字段**：`campusId / name / address / coverUrl`（A1；`coverUrl`/`coverImageUrl` 为空时用浅表面占位，不拉外链图）。
+- **选中态唯一性（2026-10-22 补，Stitch 出图错例）**：全屏**最多一张**卡带左侧 4rpx 竖条与「当前」标签。Stitch 实测把三张卡都标了「当前」，属出图错误，**严禁照抄**。点击未选中的卡 = 写入上下文并返回上一屏，不弹二次确认。
 - **Stitch prompt**：
 
 ```text
@@ -241,10 +246,11 @@ STRICTLY NO: purple, neon glow, colored shadows, emoji, English labels, card-ins
 ### 9.3 选科室
 
 - **目标**：三级科室树里快速定位（一级大科 → 二级专业组 → 三级科室）。
-- **布局**：左侧 `wd-sidebar`（宽 180rpx，选中项白底 + 主色文字 + 左侧 4rpx 竖条）；右侧列表 `wd-cell`，带「医生数」右值；顶部 `wd-search` 可跳过层级直接搜。
+- **布局**：左侧 `wd-sidebar`（宽 180rpx，选中项白底 + 主色文字 + 左侧 4rpx 竖条）；右侧列表 `wd-cell`；顶部 `wd-search` 可跳过层级直接搜。
 - **组件**：`wd-sidebar`、`wd-cell`、`wd-search`、`wd-skeleton`。
 - **四态**：加载（左 6 项骨架 + 右 8 行骨架）/ 空（「该院区暂未开放科室」）/ 错误 / 正常。
-- **字段**：`deptId / name / children`（A2 科室树，按 `campusId` 过滤）。
+- **字段**：`deptId / parentId / name / level / children`（A2 科室树，按 `campusId` 过滤）。
+- **无医生数（2026-10-22 补）**：A2 **不返回每个科室的医生数** → 右值不写「n 位医生」，有子级显示「›」、叶子显示「进入」。三级树逐层下钻；到叶子才进医生列表。
 - **Stitch prompt**：
 
 ```text
@@ -260,12 +266,12 @@ STRICTLY NO: purple, neon glow, emoji, English acronyms, nested cards, excessive
 ### 9.4 医生列表
 
 - **目标**：在院区 + 科室上下文中比较医生，决定看谁。
-- **信息层级**：姓名 + 职称 → 擅长/门诊类型 → 余量状态。
-- **布局**：两列 `wd-grid`（`span=12`，间隙 20rpx），卡片：左 88rpx 圆头像、右姓名 32rpx/600 + 职称 24rpx 次色 + 门诊类型 tag；底部一行余量提示。
-- **组件**：`wd-grid`、`view.card`、`wd-avatar`、`wd-tag`、`wd-empty`。
+- **信息层级**：姓名 + 职称 → 学位 / 就诊院区。
+- **布局**：两列 `wd-grid`（`span=12`，间隙 20rpx），卡片：左 88rpx 圆头像、右姓名 32rpx/600 + 职称 24rpx 次色；底部一行 24rpx 弱文字「学位 · 院区名」。
+- **组件**：`wd-grid`、`view.card`、`wd-avatar`、`wd-empty`。
 - **四态**：加载（4 张骨架卡）/ 空（「该科室暂无出诊医生」+「换个科室」次按钮）/ 错误 / 正常。
-- **字段**：`staffId / name / avatarUrl / title / degree / clinicType / deptName / campusName`（A3）。
-- **注意**：本屏**只**出现「满诊 / 无号」标签（红线 6），不出现「有排班 / 无排班」（那是排班页的语汇）。
+- **字段**：`staffId / name / avatarUrl / title / degree / campusName`（A3）。
+- **字段下调（2026-10-22，S10 定）**：A3 **不返回** `clinicType` / `deptName` / `intro` / 任何余量字段 → 本屏**不渲染**门诊类型 tag、不渲染擅长简介、不渲染余量或「满诊·无号」标签，也不做「全部医师 / 仅看有号」筛选 chip（Stitch 出图这三类都是越界）。「满诊 / 无号」只在**医生主页**按 A5（staffId 模式）渲染（红线 6）。
 - **Stitch prompt**：
 
 ```text
@@ -286,6 +292,7 @@ STRICTLY NO: star ratings, distance labels, purple, neon glow, emoji, nested car
 - **四态**：加载（骨架）/ 正常 / 错误 / 医生不存在（整页空态 + 返回）。
 - **字段**：`staffId / name / avatarUrl / title / degree / clinicType / deptName / campusName`（A4）。
 - **注意**：**不出现**「评分 / 患者评价 / 从医年限 / 挂号量」——契约里没有这些字段。
+- **满诊 / 无号（2026-10-22 补，红线 6）**：进页面调一次 A5（`schedule/dates?staffId=`）；窗口内**没有任何 `hasSchedule=true`** → 显示「无号」；首个有排班日的 `periods` 中 `remain` 合计为 0 → 显示「满诊」；有可约余量 → **不显示标签**（直接给「查看排班」）。本屏只允许这两个词，禁止「有排班 / 无排班 / 今日有号 / 今日满诊」。
 - **Stitch prompt**：
 
 ```text
@@ -303,11 +310,12 @@ STRICTLY NO: star ratings, review counts, years-of-experience badges, purple, ne
 **6A 排班页**
 
 - **目标**：先看「哪天有号、上午还是下午」，再决定点进去。
-- **布局**：顶部日期栏（横向 7 天，每格 120rpx，选中主色底白字，有号时格下方一个小圆点）；下方午别分段「上午 · 余 6 / 下午 · 余 2」；再下方医生卡列表（按医生看）或排班行（按排班看），行右侧显示余量。
+- **布局**：顶部日期栏（横向 7 天，每格 120rpx，选中主色底白字，有号时格下方一个小圆点）；下方午别分段「上午 · 余 6 / 下午 · 余 2」；再下方医生行（姓名 + 职称），行右侧**只**显示「有排班 / 无排班」，具体余量数字只在午别分段出现（不在行内重复）。
 - **组件**：横向 `scroll-view`、`wd-segmented`、`view.card`、`wd-tag`、`wd-skeleton`。
 - **四态**：加载 / 空（「当日暂无排班」，并提示切换日期）/ 错误 / 正常。
-- **字段**：`dates[]`（A5）、`staffId / staffName / period / remain / hasSchedule`（A6）。
-- **注意**：本屏**只**出现「有排班 / 无排班」（红线 6）。余量为 0 显示「无排班」而不是「满诊」。
+- **字段**：`dates[]{visitDate / hasSchedule / periods[{period, remain}]}`（A5）、`staffs[]{staffId / name / title / degree / periods[{period, remain, scheduleId}]}`（A6）。
+- **注意**：本屏**只**出现「有排班 / 无排班」（红线 6）。所选午别 `remain > 0` → 「有排班 · 余 N」；`remain = 0` → 「无排班」，**不写「满诊」**。
+- **scheduleId 来源（2026-10-22 补）**：A6 的 `periods[].scheduleId` 是 A7 的**唯一**入参来源，前端不得自己拼；该字段是本片唯一的后端补字段（契约 §3.6 已同步）。
 - **Stitch prompt**：
 
 ```text
@@ -327,8 +335,9 @@ STRICTLY NO: calendar month grid, purple, neon glow, emoji, English labels, "满
 - **布局**：顶部「医生 + 日期 + 午别」摘要条（一行，32rpx/600）；中部 3 列时间格（每格 200rpx 宽 × 88rpx 高，圆角 12rpx）；底部固定条显示已选时刻与价格 + 主按钮「下一步」。
 - **组件**：`wd-grid`、自写格子、固定底栏、`wd-button`。
 - **四态**：加载（9 格骨架）/ 空（「该午别号源已约满」+「换上午/下午」）/ 错误 / 正常。
-- **字段**：`slotId / timePoint / period / fee / status`（A7）。
-- **注意**：`status=TAKEN` 的格子直接 `disabled` 并显示「已约」，点击不弹 toast。
+- **字段**：`slotId / timePoint / fee`（A7）；`scheduleId` 取自 A6 `periods[].scheduleId`，`period` 取自当前午别上下文。
+- **注意**：A7 **只返回可约号源**（`status=TAKEN` 的根本不出现，契约 §3.7）→ 本屏不存在「已约但可点」的格子，**不要在前端补占位格、不要自己算已约**。
+- **空态语义**：该午别返回空数组 = 「该午别号源已约满」，给「换上午 / 换下午」出口。
 - **Stitch prompt**：
 
 ```text
@@ -371,8 +380,9 @@ STRICTLY NO: purple, neon glow, emoji, English, form fields floating labels, nes
 - **布局**：金额区（居中，`¥` 44rpx + 数字 72rpx/700，等宽数字）→ 倒计时一行（`wd-count-down`，15 分钟，弱文字）→ 支付方式（`wd-cell`，当前仅「模拟支付」一项，右侧 `wd-tag` 标注「演示」）→ 主按钮「立即支付」+ 次按钮「取消本次预约」（危险色文字，二次确认）。
 - **组件**：`wd-count-down`、`wd-cell`、`wd-tag`、`wd-button`、`wd-dialog`。
 - **四态**：待支付 / 支付中（按钮 loading + 禁止返回）/ 已支付（自写成功块：绿色对勾 + 「查看预约」主按钮）/ 已关闭（说明 + 「重新预约」）。
-- **字段**：`paymentNo / amount / expireTime`（C1 创建 / B1 回参）、轮询 `GET /appt/patient/payment/{paymentNo}`（C2）。
-- **交互**：进入即查一次 → 每 2s 轮询 → 60s 停止并给两个出口；关闭支付页不取消预约（超时由后端关单）。
+- **字段与端点出处（2026-10-22 订正）**：支付单在 **B1 提交挂号**时创建，回参 `paymentNo / amount / expireTime` 直接带过来（**没有独立的「创建支付」端点**）；「立即支付」= `POST /appt/patient/payment/{paymentNo}/mock-pay`（**C2**，`result=SUCCESS`，返回 `accepted` 只表示「已受理」）；状态 = `GET /appt/patient/payment/{paymentNo}`（**C3**）；「取消本次预约」= `POST /appt/patient/payment/{paymentNo}/cancel`（**B4**）。C1 是渠道回调，走服务端内部链路，前端不调用。
+- **交互**：进入即查一次（C3）→ 每 2s 轮询 → 60s 停止并给两个出口（「继续等待」重开一轮 /「稍后在预约里查看」`reLaunch` 到我的预约）；离开页面（`onHide` / `onUnload`）必须停掉轮询；关闭支付页不取消预约（超时由后端关单）。
+- **从「我的预约」进入**：B2 行**不含 `paymentNo`** → 两个动作（去支付 / 取消）都要先调 B3 `GET /appt/patient/registration/{id}` 取 `payment.paymentNo`，再跳本页；只调接口，**不渲染详情页**（详情页归 S11）。
 - **Stitch prompt**：
 
 ```text
@@ -388,16 +398,19 @@ STRICTLY NO: purple, neon glow, emoji, English, QR code, card brand logos, gradi
 ### 9.9 我的预约
 
 - **目标**：一屏看清所有预约的状态与下一步动作（去支付 / 去签到 / 退号 / 再看一次）。
-- **布局**：顶部状态筛选（`wd-tabs`：全部 / 待支付 / 已预约 / 已完成）；列表卡：左侧状态色竖条 4rpx、右上状态标签；主信息「医生 · 科室」「院区 · 日期 时间」；底部一行按状态给主次按钮。
+- **布局**：顶部状态筛选（`wd-tabs`：待支付 / 已预约 / 已完成 / 退号·爽约）；列表卡：左侧状态色竖条 4rpx、右上状态标签；主信息「医生 · 科室」「院区 · 日期 时间」；底部一行按状态给主次按钮。
 - **组件**：`wd-tabs`、`view.card`、`wd-tag`、`wd-button`、`wd-empty`、`wd-loadmore`。
 - **四态**：加载（3 张骨架卡）/ 空（空态 + 「去看医生」）/ 错误 / 正常；分页用 `wd-loadmore` 触底加载。
-- **字段**：`registrationNo / patientName / staffName / deptName / campusName / visitDate / period / timePoint / status / fee`（B2）。
-- **状态 → 动作**：`WAIT_PAY`→「去支付 / 取消」；`BOOKED`→「查看就诊码 / 退号」（过退号时限则仅「查看就诊码」）；`SIGNED`/`COMPLETED`→「再次预约」；`CLOSED`/`CANCELED_*`/`NOSHOW`→「再次预约」。
+- **字段**：`registrationId / registrationNo / patientName / staffName / deptName / campusName / visitDate / period / timePoint / status / fee`（B2）。
+- **tab 与线值映射（2026-10-22 定；B2 `status` 必填，一次只查一个状态）**：待支付 `WAIT_PAY` / 已预约 `BOOKED` / 已完成 `COMPLETED` / 退号·爽约（该 tab 内给四个子筛选：主动退号 `CANCELED_ACTIVE`、停诊退号 `CANCELED_PASSIVE`、已爽约 `NOSHOW`、已关闭 `CLOSED`，默认主动退号）。**没有「全部」tab**——B2 不支持不传 `status`。`CLOSED` 必须给入口：待支付取消 / 超时关单都落到这个终态，否则「取消后哪都找不到」。
+- **状态 → 动作（S10 收窄）**：`WAIT_PAY` → 「去支付 / 取消」；其余状态**只展示状态标签，不给动作按钮**（「查看就诊码 / 退号 / 再次预约」依赖 B3 详情页与 B5，归 **S11**）。
+- **paymentNo 来源**：B2 行不含 `paymentNo`，两个动作都要先调 B3 取 `payment.paymentNo`（不渲染详情页）。
+- **默认落点（2026-10-22 补）**：tabBar 页无法带 query，落点只能走 `store/booking` 的一次性意图——支付成功「查看预约」固定落「已预约」，超时「稍后在预约里查看」落「待支付」；直接点「预约」tab 时先探测：有待支付单落「待支付」，否则落「已预约」（避免把用户丢在空页面）。用户手动切过 tab 后不再自动改落点。
 - **Stitch prompt**：
 
 ```text
 Mobile "my appointments" list screen, 750px width, background #F5F7FA.
-Top: a 4-item horizontal tab strip (全部 / 待支付 / 已预约 / 已完成), active tab in #1F7A8C with a 4rpx
+Top: a 4-item horizontal tab strip (待支付 / 已预约 / 已完成 / 退号·爽约), active tab in #1F7A8C with a 4rpx
 underline, inactive in #8A94A6.
 Three white cards (24rpx radius, 28rpx padding, 20rpx gaps): each has a 4rpx state-colored bar on the
 left, a 32rpx 600-weight "李文博 · 心血管内科" title, a 26rpx #8A94A6 line "东院区 · 10月24日 09:30",

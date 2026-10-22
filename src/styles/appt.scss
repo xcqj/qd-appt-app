@@ -1,0 +1,161 @@
+/**
+ * 移动端设计 token 与公共样式（唯一出处：app/DESIGN.md §2–§4）
+ *
+ * 规则：页面样式只用这里的变量与 class，不写裸 hex；
+ * 阴影只允许「卡片 / 浮层」两档；图标与装饰纹样禁止。
+ */
+page {
+  /* Wot UI 主题色覆盖（与 DESIGN §2.1 主色一致） */
+  --wot-color-theme: #1f7a8c;
+  background-color: #f5f7fa;
+  color: #1f2d3d;
+  font-size: 28rpx;
+
+  --appt-primary: #1f7a8c;
+  --appt-primary-dark: #16636f;
+  --appt-accent: #2a9d8f;
+  --appt-success: #2e9e6b;
+  --appt-warning: #d98e04;
+  --appt-danger: #d14343;
+  --appt-info: #3b82c4;
+  --appt-canvas: #f5f7fa;
+  --appt-surface: #ffffff;
+  --appt-surface-weak: #eef2f6;
+  --appt-text: #1f2d3d;
+  --appt-text-sub: #5a667e;
+  --appt-text-weak: #8a94a6;
+  --appt-line: #e6ebf2;
+  --appt-shadow-card: 0 2rpx 8rpx rgba(31, 45, 61, 0.04);
+  --appt-shadow-float: 0 8rpx 32rpx rgba(31, 45, 61, 0.12);
+}
+
+.appt-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background-color: var(--appt-canvas);
+  color: var(--appt-text);
+}
+
+.appt-content {
+  padding: 0 32rpx 40rpx;
+}
+
+/* 白卡：24rpx 圆角 / 28rpx 内边距 / 卡片阴影；卡内不再套卡 */
+.appt-card {
+  box-sizing: border-box;
+  padding: 28rpx;
+  border-radius: 24rpx;
+  background-color: var(--appt-surface);
+  box-shadow: var(--appt-shadow-card);
+}
+
+.appt-card + .appt-card {
+  margin-top: 20rpx;
+}
+
+.appt-section-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--appt-text);
+}
+
+.appt-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--appt-text);
+}
+
+.appt-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: var(--appt-text);
+}
+
+.appt-sub {
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: var(--appt-text-sub);
+}
+
+.appt-weak {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--appt-text-weak);
+}
+
+.appt-link {
+  font-size: 26rpx;
+  color: var(--appt-primary);
+}
+
+.appt-divider {
+  height: 1rpx;
+  background-color: var(--appt-line);
+}
+
+/* 列表行：96rpx 高、底部 1rpx 分隔线、末行无线 */
+.appt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-height: 96rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--appt-line);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+/* 金额：¥ 22rpx + 数字 600 权重 + 等宽数字，两位小数不省略 */
+.appt-money {
+  display: inline-flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  color: var(--appt-text);
+
+  &__symbol {
+    margin-right: 4rpx;
+    font-size: 22rpx;
+  }
+
+  &__value {
+    font-size: 30rpx;
+    font-weight: 600;
+  }
+}
+
+/* 底部固定操作条：高 112rpx + 安全区 + 浮层阴影；内容区需留占位 */
+.appt-bottom-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 16rpx 32rpx calc(16rpx + env(safe-area-inset-bottom));
+  background-color: var(--appt-surface);
+  box-shadow: var(--appt-shadow-float);
+}
+
+.appt-bottom-placeholder {
+  height: calc(160rpx + env(safe-area-inset-bottom));
+}
+
+.appt-press {
+  transition: opacity 120ms ease-out, transform 120ms ease-out;
+
+  &:active {
+    opacity: 0.9;
+    transform: translateY(1rpx);
+  }
+}
+
+.appt-tabbar-gap {
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+}
