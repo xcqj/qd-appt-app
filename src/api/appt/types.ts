@@ -280,7 +280,7 @@ export interface SignResultVo {
   staffName: string
   visitDate: string
   period: string
-  /** 完整时间戳（该 VO 未加 @JsonFormat），展示统一过 timePointText() */
+  /** 已加 @JsonFormat(HH:mm)（2026-10-24 补齐）；仍建议过 timePointText() 兜底 */
   timePoint: string
   signTime?: string
   /** SCAN / MANUAL */

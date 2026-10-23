@@ -4,7 +4,7 @@
  *
  * 字段：E3 `registrationNo / patientName / staffName / deptName / campusName / visitDate / period /
  *       timePoint / status / signTime / signType`（排序：院区 → 科室 → 时刻 → id，故按院区分组）。
- * 硬约束：**请求不带 `campusId`**（数据范围服务端按账号解析）；`timePoint` 是完整时间戳 → `timePointText()` 归一。
+ * 硬约束：**请求不带 `campusId`**（数据范围服务端按账号解析）；`timePoint` 已由服务端格式化为 HH:mm，展示仍过 `timePointText()` 兜底。
  * 行内「补签」走 E2（`registrationId`），已爽约不可补签（服务端权威）。
  */
 import { computed, ref } from 'vue'
