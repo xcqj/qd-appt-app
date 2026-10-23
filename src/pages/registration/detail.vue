@@ -82,12 +82,14 @@ const infoRows = computed(() => {
     { label: '就诊科室', value: item.staff?.deptName ?? '' },
     { label: '就诊院区', value: item.staff?.campusName ?? '' },
     { label: '就诊时间', value: visitText.value },
-    {
-      label: '就诊人',
-      value: [item.patient?.name, item.patient?.idNoMasked].filter(Boolean).join(' · '),
-    },
+    { label: '就诊人', value: item.patient?.name ?? '' },
   ]
 })
+
+/** 退款信息只与「已退号」两个终态同屏（DESIGN §9.10 校准：状态头与退款块不得矛盾） */
+const showRefund = computed(
+  () => Boolean(detail.value?.refund) && ['CANCELED_ACTIVE', 'CANCELED_PASSIVE'].includes(status.value),
+)
 
 const canCancel = computed(() => {
   if (!detail.value || status.value !== 'BOOKED') {
@@ -218,6 +220,10 @@ onShow(() => {
               <text class="appt-sub">证件类型</text>
               <text class="appt-text detail__value">{{ idTypeLabel(detail.patient.idType) }}</text>
             </view>
+            <view v-if="detail.patient?.idNoMasked" class="appt-row">
+              <text class="appt-sub">证件号</text>
+              <text class="appt-text detail__value detail__value--num">{{ detail.patient.idNoMasked }}</text>
+            </view>
             <view v-if="detail.signTime" class="appt-row">
               <text class="appt-sub">签到时间</text>
               <text class="appt-text detail__value">{{ shortDateTime(detail.signTime) }}</text>
@@ -225,7 +231,7 @@ onShow(() => {
           </view>
 
           <!-- 退款块 -->
-          <view v-if="detail.refund" class="appt-card">
+          <view v-if="showRefund && detail.refund" class="appt-card">
             <text class="appt-section-title">退款信息</text>
             <view class="appt-row">
               <text class="appt-sub">退款单号</text>
@@ -343,6 +349,12 @@ onShow(() => {
   &__value {
     max-width: 460rpx;
     text-align: right;
+
+    /* 证件号等脱敏串用等宽数字，避免逐行抖动 */
+    &--num {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 1rpx;
+    }
   }
 
   &__actions {

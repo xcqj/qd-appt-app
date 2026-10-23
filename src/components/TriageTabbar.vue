@@ -14,10 +14,15 @@ import { ROUTES } from '@/router/routes'
 defineProps<{ active: 'sign' | 'list' | 'suspend' }>()
 
 const items = [
-  { key: 'sign', label: '签到', path: ROUTES.triageSign },
-  { key: 'list', label: '当日', path: ROUTES.triageList },
-  { key: 'suspend', label: '停诊', path: ROUTES.triageSuspend },
+  { key: 'sign', label: '签到', path: ROUTES.triageSign, icon: 'triage-sign' },
+  { key: 'list', label: '当日', path: ROUTES.triageList, icon: 'triage-list' },
+  { key: 'suspend', label: '停诊', path: ROUTES.triageSuspend, icon: 'triage-suspend' },
 ] as const
+
+/** 图标与患者端 tabBar 同源（DESIGN §12.5：24 网格 / stroke 2 / 81×81 PNG） */
+function iconSrc(item: (typeof items)[number], isActive: boolean) {
+  return `/static/tabbar/${item.icon}${isActive ? '-active' : ''}.png`
+}
 
 function go(path: string) {
   uni.reLaunch({ url: path })
@@ -33,7 +38,7 @@ function go(path: string) {
       :class="{ 'is-active': active === item.key }"
       @click="go(item.path)"
     >
-      <view class="triage-tabbar__dot" />
+      <image class="triage-tabbar__icon" :src="iconSrc(item, active === item.key)" mode="aspectFit" />
       <text class="triage-tabbar__label">{{ item.label }}</text>
     </view>
   </view>
@@ -67,15 +72,14 @@ function go(path: string) {
     }
   }
 
-  &__dot {
-    width: 12rpx;
-    height: 12rpx;
-    border-radius: 50%;
-    background: currentColor;
+  &__icon {
+    width: 44rpx;
+    height: 44rpx;
   }
 
   &__label {
     font-size: 24rpx;
+    line-height: 1.4;
   }
 }
 </style>

@@ -2,11 +2,32 @@
  * 移动端设计 token 与公共样式（唯一出处：app/DESIGN.md §2–§4）
  *
  * 规则：页面样式只用这里的变量与 class，不写裸 hex；
- * 阴影只允许「卡片 / 浮层」两档；图标与装饰纹样禁止。
+ * 阴影只允许「卡片 / 浮层」两档；
+ * 页面级装饰图标与纹样禁止；平台图标（tabBar / favicon / 品牌标记，见 DESIGN §12）除外。
  */
 page {
   /* Wot UI 主题色覆盖（与 DESIGN §2.1 主色一致） */
   --wot-color-theme: #1f7a8c;
+  /*
+   * Wot 2.x 的按钮/标签颜色取的是色阶变量（$primary-6: var(--wot-primary-6, $blue-6)），
+   * 只设 --wot-color-theme 不会改变按钮底色（默认落到蓝色）。这里按 DESIGN §2.1 补齐主色阶，
+   * 危险色同理，避免 `wd-button type="primary"` 出现框架蓝（2026-10-24 修，S12）。
+   */
+  --wot-primary-1: #e8f1f3;
+  --wot-primary-2: #d2e4e7;
+  --wot-primary-3: #bcd6db;
+  --wot-primary-4: #8fbdc5;
+  --wot-primary-5: #55a0ac;
+  --wot-primary-6: #1f7a8c;
+  --wot-primary-7: #16636f;
+  --wot-primary-8: #11505a;
+  --wot-primary-9: #0d4048;
+  --wot-primary-10: #082a30;
+  --wot-danger-main: #d14343;
+  --wot-danger-hover: #dc5b5b;
+  --wot-danger-clicked: #b93737;
+  --wot-danger-disabled: #e8afaf;
+  --wot-danger-surface: #fbeaea;
   background-color: #f5f7fa;
   color: #1f2d3d;
   font-size: 28rpx;

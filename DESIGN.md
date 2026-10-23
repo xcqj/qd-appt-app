@@ -3,6 +3,7 @@
 > **本文是移动端唯一视觉事实源**。写页面前先对照本文件；颜色、字号、间距、圆角**只取本文件的 token**，不得临时造值。
 > 覆盖范围：S10 患者主链路 10 屏（首页 / 选院区 / 选科室 / 医生列表 / 医生主页 / 排班选时 / 确认预约 / 支付 / 我的预约 / 预约详情）。
 > S11 辅助页（我的就诊人、我的医生、消息、我的、分诊台）只适用本文的 token 与组件规范，不逐屏画。
+> 例外：**§9.11「我的」**于 S12（2026-10-24）补了 blueprint——它是 tabBar 四项之一、首屏级入口，必须有逐屏口径。
 > 配套：`README.md`（启动）、`AGENTS.md`（实现约定）、`../docs/api-contract.md`（字段出处）。
 
 演示数据全部虚构，界面只出现中文与虚构医院名，**不出现英文代号**。
@@ -209,18 +210,23 @@
 - **四态**：加载（骨架 ×3）/ 正常（3 院区）/ 空（「暂无可预约院区」+ 重试）/ 错误（错误文案 + 重试按钮）。
 - **字段**：`campusId / name / address`（A1）；快捷科室用 `deptId / name`（A2，**必须带上次所选院区的 `campusId`**）。
 - **快捷科室的数据前提（2026-10-22 补）**：A2 的 `campusId` 是必填项，而首页本身没有院区上下文 → 只在「用户此前选过院区」（`store/booking` 持久化）时才请求 A2 并展示一级科室前 4 项；**从未选过院区就整块不渲染**（不留空壳）。该区块请求失败时整块隐藏，不影响院区入口主内容。
-- **底部 tab 用原生 tabBar**：`pages.json` 的 `tabBar` 只能文字（不能加图标），Stitch 出图的「图标 + 文字」自绘底栏不采用。
-- **Stitch prompt**：
+- **底部 tab 用原生 tabBar + 81×81 线性图标**（2026-10-24 改，原「只能文字」口径已由 S12 推翻）：`pages.json` 的 `tabBar` 配 `iconPath` / `selectedIconPath`（`static/tabbar/*.png`），规格见 §12.5；**仍不采用自绘底栏**，Stitch 出图的悬浮/胶囊底栏一律回调成原生四项。
+- **Stitch 出图校准（2026-10-24，S12）**：`appt-s12` 项目「S12 首页」屏（1280×1024，**DESKTOP 画布，尺寸不可用**）。可直接采用：品牌区「母标 + 标题同行 → 副标题 → 未登录链接」、三张院区卡纵向堆叠 + 右侧 chevron、快捷科室 4 列白卡、页脚免责声明、底部四项**线性图标** tabBar。必须回调：① 通栏与 `240rpx` 高在桌面画布上无法体现，实现仍按 `240rpx` 通栏渐变；② 院区地址取 A1 `address`，不用出图示例文案；③ 卡内边距 `28rpx` / 名称 `32rpx` / 地址 `26rpx`，不照抄桌面 px。
+- **Stitch prompt**（2026-10-24 修订：补移动视口声明 + tabBar 图标化；缺视口声明时 Stitch 会按 DESKTOP 出图）：
 
 ```text
-Mobile mini-program home screen for a hospital appointment app, 750px design width.
-Top: a 240px-tall brand block with a subtle 135° gradient from #1F7A8C to #2A9D8F,
-containing a 56rpx bold white title "预约挂号", a 26rpx white 90%-opacity subtitle
-"选择院区开始预约 · 演示数据全部虚构", and a small underlined white link "未登录，点击去登录 ›".
+390x844 mobile viewport, single phone frame, no desktop canvas.
+Mobile mini-program home screen for a hospital appointment app. Design width 750rpx (= full screen width);
+all sizes below are rpx where 750rpx spans the full width, so 32rpx ≈ 16px on a 390px screen.
+Top: a 240rpx-tall full-bleed brand block (no radius) with a subtle 135° gradient from #1F7A8C to #2A9D8F,
+containing one row of a 40x40 white brand mark (rounded-square queue tag with a negative medical cross)
+plus a 56rpx bold white title "预约挂号", a 26rpx white 90%-opacity subtitle
+"选择就诊院区，开始预约挂号 · 演示数据均为虚构", and a small underlined white link "未登录，点击登录 ›".
 Below: 32rpx side padding, a 36rpx semi-bold heading "选择院区", then three stacked white cards
 (border-radius 24rpx, padding 28rpx, shadow 0 2rpx 8rpx rgba(31,45,61,.04)), each showing a
 32rpx #1F2D3D campus name and a 26rpx #8A94A6 address line.
-Bottom: a 4-item native tab bar with text only (首页 / 预约 / 消息 / 我的), active item #1F7A8C.
+Bottom: a 4-item native tab bar with a 24rpx line icon above a 24rpx label
+(首页 / 预约 / 消息 / 我的), active item icon+label #1F7A8C, inactive #8A94A6.
 Background #F5F7FA. Fonts: PingFang SC, tabular numerals for numbers.
 STRICTLY NO: purple, neon glow, large gradient outside the hero, emoji, English acronyms,
 card-inside-card, 3-column equal feature cards, stock-photo collage.
@@ -430,10 +436,12 @@ STRICTLY NO: purple, neon glow, emoji, English, star ratings, nested cards, more
 - **字段**：`registrationNo / status / staffName / deptName / campusName / visitDate / period / timePoint / patientName / fee / visitCode`（B3）。
 - **注意**：`visitCode` 仅在有效态返回（契约 §4.3），页面不得用 `registrationNo` 代替就诊码渲染——两者语义不同。
 - **Stitch 出图校准（2026-10-23）**：用户生成的「预约详情 - 就诊码」屏（`screens/ebdb6776…`）可直接 1:1 落地的部分是**状态头结构、360rpx 二维码块（出图 180px）、五行信息卡、退号入口与「就诊前一日 23:00 前可退」说明**。**必须回调的 4 处**：① 导航标题出图写「确认预约」→ 应为「预约详情」；②「心血管内科 (专家门诊)」的括号门诊类型删掉（B3 的 `staff` 无 `clinicType`）；③「09:30 - 10:00」时间区间改单点 `timePoint`（契约 §2.4 只给单点）；④ 画布 `#f8f9ff` / 文字 `#0e1d2c` 取 `#F5F7FA` / `#1F2D3D`。就诊人行的 `3701**********1234` 可保留（B3 有 `idNoMasked`，不违红线）。
-- **Stitch prompt**：
+- **Stitch 出图校准（2026-10-24，S12）**：`appt-s12` 项目「S12 详情」屏（2560×2048，DESKTOP 画布）。可 1:1 落地：状态条（状态名 + 一句下一步）、就诊码卡「二维码 → 单号 → 提示」居中列、信息卡 `96rpx` 行 + `1rpx` 分隔线、红字退号 + 时限说明。**必须回调 3 处**：① **状态与退款块矛盾**——出图状态头写「已预约」却同时显示「退款信息 / 已原路退回」，实现只在 `CANCELED_ACTIVE / CANCELED_PASSIVE`（有退款单的终态）渲染退款块；② **证件号不得并进「证件类型」行**——拆成「就诊人 姓名」/「证件类型 居民身份证」/「证件号 310104********1234」三行（红线 15 只上脱敏串）；③ 科室名不加「门诊」后缀，直接用 A2/A6 的 `name`。
+- **Stitch prompt**（2026-10-24 修订：补移动视口声明）：
 
 ```text
-Mobile appointment detail screen with check-in code, 750px width, background #F5F7FA.
+390x844 mobile viewport, single phone frame, no desktop canvas.
+Mobile appointment detail screen with check-in code, width 750rpx (full screen), background #F5F7FA.
 Top status banner: full-width block with 12%-opacity #3B82C4 background, contains a 40rpx 600-weight
 "已预约" and a 26rpx #5A667E line "就诊当天请提前 15 分钟到院签到".
 Code card: white card, centered 360rpx QR code, below it 24rpx #1F2D3D mono-looking text of the booking
@@ -441,6 +449,32 @@ number and a 24rpx #8A94A6 hint "就诊当天向分诊台出示".
 Info card: five label/value rows (医生 / 科室 / 院区 / 就诊时间 / 就诊人), 28rpx, right values #5A667E.
 Bottom: a 26rpx #D14343 text button "退号", with a 24rpx #8A94A6 note "就诊前一日 23:00 前可退".
 STRICTLY NO: purple, neon glow, emoji, English, barcode duplication, nested cards, gradient buttons.
+```
+
+### 9.11 我的（S11 辅助页，S12 补 blueprint）
+
+- **目标**：一眼看清「我是谁 / 能去哪」，危险操作放最后且要二次确认。
+- **布局**：头像块（`96rpx` 圆形主色底 + 首字，姓名 `32rpx`/600，角色 `24rpx` 弱文字）→ 账户组（我的就诊人 / 我的医生 / 我的预约 / 消息）→ 角色组（仅 `triage`：切换到分诊台 / 返回患者端）→ 退出登录（独立白卡，红色文字居中）→ 页脚免责声明 `20rpx`。
+- **组件**：`view.card`、`wd-cell` 风格行（`96rpx` 高、右 chevron、`1rpx` 分隔线）、`wd-dialog`（退出二次确认）。
+- **四态**：未登录（头像块显示「未登录」+ 登录按钮，账户组整组不渲染）/ 已登录 / 已登录且 `triage` 角色（多一组）/ 加载（本页无接口请求，不需要骨架）。
+- **字段**：`displayName`、`roles`（登录态来自 `store/user`）；入口文案固定，不臆造积分、优惠券、订单统计。
+- **Stitch 出图校准（2026-10-24，S12）**：`appt-s12` 项目「S12 我的」屏（2560×3248，DESKTOP 画布）。可采用：头像块结构、两组功能列表 + 红字退出、页脚声明、底部四项图标 tabBar。**必须回调 3 处**：① 出图把三组同时渲染——角色组只在 `isTriage` 时出现，未登录时账户组与退出登录整块不渲染；② 组间距回 `20rpx`、卡片圆角回 `24rpx`（§4）；③ 退出登录独立成卡并按 §5 弹二次确认，不与「返回患者端」同组。
+- **Stitch prompt**（2026-10-24 新增）：
+
+```text
+390x844 mobile viewport, single phone frame, no desktop canvas.
+Mobile "profile / mine" screen for a hospital appointment app, width 750rpx (full screen), background #F5F7FA.
+Profile card: white, radius 24rpx, shadow 0 2rpx 8rpx rgba(31,45,61,.04), padding 32rpx 28rpx, margin 32rpx;
+96rpx circular avatar filled #1F7A8C with a 40rpx white single Chinese initial; name 32rpx 600 #1F2D3D,
+role 24rpx #8A94A6 on the next line.
+Group 1 (margin-top 20rpx): white rounded-24rpx card, rows 96rpx tall, left 28rpx #1F2D3D, right 26rpx
+#8A94A6 chevron, 1rpx #E6EBF2 divider between rows only: 我的就诊人 / 我的医生 / 我的预约 / 消息.
+Group 2 (triage role only): same card style: 切换到分诊台 / 返回患者端.
+Group 3: same card style, single row, 28rpx #D14343 centered: 退出登录.
+Footnote: 20rpx #8A94A6, line-height 1.6: "演示项目：数据全部虚构，支付走模拟渠道，不提供真实医疗服务。"
+Bottom: 4-item native tab bar with 24rpx line icons (首页 / 预约 / 消息 / 我的), active item #1F7A8C.
+STRICTLY NO: points, coupons, order statistics, badges, gradient header, large hero, purple, neon glow,
+emoji, English labels, card-inside-card, three equal feature cards.
 ```
 
 ---
@@ -481,6 +515,7 @@ STRICTLY NO: purple, neon glow, emoji, English, barcode duplication, nested card
 
 - **构成**：圆角方形号牌（`52×44`，圆角 `10`，viewBox `64×64`）+ 负形医疗十字（臂长 `24`、臂宽 `7.2`、圆角 `2.4`，偏心左移 `4.5`）+ 右侧三枚等距圆点（`r=3.1`，纵向间距 `9`）。
 - **挖空方式**：`fill-rule="evenodd"` 单路径，**不使用 `<mask>`**（多图内联时 `mask id` 会重名导致互相串挖空，2026-10-24 已踩过）。
+- **三点也是负形（2026-10-24 修正）**：`logo-preview/final/A3c-母标.svg` 把三枚圆点写成独立的 `<circle fill="currentColor">`，与牌同色 → 实际渲染时**完全看不见**（该文件只是预览稿，不是实现基准）。正解是把三点作为**同一 evenodd 路径的子形状**挖空，子形状顺序为「牌 → 十字竖臂 → 十字横臂 → 三个圆点」；圆点路径用两段半圆弧闭合（`M cx-r cy A r r 0 1 0 cx+r cy A r r 0 1 0 cx-r cy Z`）。
 - **着色**：`currentColor` 单色，负形即底色透出；不描边、不加渐变、不加阴影。
 
 ### 12.2 简化版（responsive logo，必须同源）
@@ -493,13 +528,34 @@ STRICTLY NO: purple, neon glow, emoji, English, barcode duplication, nested card
 
 > 三档必须由同一套几何参数派生，**不允许换成另一个图形**（例如另起一个 Q）。同一记忆点、不同简化层级，这是 responsive logo 与「两套 logo」的区别。
 
+**尺寸 → 档位映射（2026-10-24 定，`app/scripts/gen-brand-assets.mjs` 按此表实现，不再逐处判断）：**
+
+| 目标像素 | 档位 | 构成 | 用途 |
+|---|---|---|---|
+| 16 / 24 / 32 | `crossOnly` | 仅十字（牌宽 46% 等比换算），去牌、去三点 | `favicon` 16/32 档、小程序图标、极小占位 |
+| 40 | `compact` | 牌 + 十字（臂宽 `8.4`），去三点 | 移动端页头小图、消息列表占位 |
+| 48 / 64 / 128 / 256 / 512 | `full` | 牌 + 十字（臂宽 `7.2`）+ 三点 | 后台顶栏与登录页（48）、`favicon` 48 档、PNG 全档、小程序封面 |
+
+> **32px 例外说明**：32 像素虽落在「24–48 简化档」区间，但作为 `favicon` 专用档改用纯十字——32px 下牌高仅 `44/64×32 ≈ 22px`、十字臂宽 `7.2/64×32 ≈ 3.6px`，「牌套十字」会糊成一团；去牌后十字仍有约 15px 实心面积，识别度更高。**该例外只对 `favicon` 生效**，40px 的移动端页头仍走简化档。
+> **小程序端一律用 PNG**：`<image>` 在微信小程序不支持 `svg`，`.svg` 只作为源文件与 H5/后台使用；需要反白时用 `logo-inverse-*.png`，不在小程序里给 SVG 换色。
+
 ### 12.3 导出清单（S12 交付物）
 
-- `favicon.ico`（16/32/48 三档内嵌）
-- PNG：`16 / 32 / 48 / 64 / 128 / 256 / 512`
-- 反白版（纯白单色，用于主色底/深色底）
-- 横版组合：`图形 + 「号源」字标`（字标用系统字体，PingFang / 微软雅黑，字重 600，字距 0）
-- 小程序封面图（`144×144` 与 `520×280` 各一张）
+- `favicon.ico`（16/32/48 三档内嵌，PNG-in-ICO 拼装）
+- PNG：`16 / 32 / 48 / 64 / 128 / 256 / 512`（主色 `#1F7A8C`）
+- 反白版（纯白单色，用于主色底/深色底）：`logo-inverse-{48,64,128,512}.png` + `logo-full-inverse.svg`
+- 横版组合：`图形 + 「号源」字标`（字标用系统字体，PingFang / 微软雅黑，字重 600，字距 0）：`logo-horizontal.svg` + `logo-horizontal-512.png`
+- 小程序封面图（`144×144` 与 `520×280` 各一张）：`cover-144.png` / `cover-520x280.png`
+
+**实际落盘清单（2026-10-24 定，文件名固定，脚本按此输出）：**
+
+| 目录 | 文件 |
+|---|---|
+| `app/src/static/brand/` | `logo-full-primary.svg` / `logo-compact-primary.svg` / `logo-cross-primary.svg` / `logo-full-inverse.svg` / `logo-horizontal.svg` / `logo-{16,32,48,64,128,256,512}.png` / `logo-inverse-{48,64,128,512}.png` / `logo-compact-48.png` / `logo-compact-inverse-48.png` / `logo-horizontal-512.png` / `cover-144.png` / `cover-520x280.png` / `favicon.ico` |
+| `app/src/static/` | `logo.png`（64 完整档，兼容既有引用） |
+| `app/src/static/tabbar/` | `home.png` / `home-active.png` / `booking.png` / `booking-active.png` / `notice.png` / `notice-active.png` / `mine.png` / `mine-active.png`（患者端 4 项）+ `triage-{sign,list,suspend}.png` / `triage-{sign,list,suspend}-active.png`（分诊台 3 项），均 81×81 |
+| `admin/src/assets/logo/` | `logo.png`（128 完整档）/ `logo-white.png`（128 反白档）/ `logo-compact.png` / `logo-compact-white.png`（48 简化档，顶栏与侧栏 28–32px 显示用） |
+| `admin/public/` | `favicon.ico`（16/32/48） |
 
 ### 12.4 禁止事项
 
@@ -507,6 +563,30 @@ STRICTLY NO: purple, neon glow, emoji, English, barcode duplication, nested card
 2. 不在牌内加文字或数字（数字会让它变成「号牌样式」而非品牌）。
 3. 不用双色或多色版本；需要对比时用底色，不给图形上色。
 4. 安全区：图形外留白 ≥ 牌宽的 `12%`，`favicon` 档可降至 `8%`。
+
+### 12.5 tabBar 图标规格（2026-10-24 定，替换 §9.1「只能文字」的旧口径）
+
+| 项 | 取值 |
+|---|---|
+| 画布 | `81×81` px，透明底（微信 tabBar 推荐尺寸，H5 同一份文件） |
+| 可视区 | 居中 `48×48` px，四周留 `16.5` px 空白（等比缩放到 24 网格即留 4.9 单位） |
+| 网格 | `viewBox="0 0 24 24"`，缩放系数 `3.375`（81/24） |
+| 线宽 | `stroke-width: 2` → 实际 `6.75` px；`stroke-linecap="round"`、`stroke-linejoin="round"` |
+| 颜色 | 未选中 `#8A94A6`（`--appt-text-weak`）／选中 `#1F7A8C`（`--appt-primary`），与 `pages.json` 的 `color` / `selectedColor` 一致 |
+| 四项图形 | 首页＝房檐+门洞；预约＝日历+对勾；消息＝气泡+两行短横；我的＝单人剪影 |
+| 分诊台三项 | 签到＝扫码框（四角+中线）；当日＝列表（三条横线+圆点）；停诊＝圆圈内暂停符。分诊台是**自绘底栏**（原生 tabBar 无法两套并存），图标复用同一套规则，`100rpx` 高、图标 `44rpx`、选中文字 600 字重 |
+| 提交内容 | **只提交 PNG**；路径数据维护在 `gen-brand-assets.mjs` 的 `TABBAR_ICONS` 常量里，不提交 SVG 中间件（避免两份源漂移） |
+| 禁止 | 双色/渐变、投影、圆角底块、角标红点、面性填充（与母标的线条感冲突） |
+
+### 12.6 生成与校验
+
+```bash
+cd app && pnpm brand:gen          # 一条命令重出 §12.3 全部产物
+```
+
+- 光栅化用 `@resvg/resvg-js`（预编译 napi，WSL 无需 `rsvg-convert` / `cairosvg` / Chromium）；`favicon.ico` 由 3 张 PNG 载荷 + ICO 头手写拼装，不引额外依赖。
+- 脚本同时写 `admin/src/assets/logo/` 与 `admin/public/favicon.ico`；`../admin` 不存在时只写 app 产物并打印提示，不中断。
+- 校验：`file app/src/static/brand/*.png` 尺寸与上表一致；`pages.json` 四项 `iconPath` / `selectedIconPath` 文件存在；H5 与小程序构建后底栏图形一致。
 
 ---
 

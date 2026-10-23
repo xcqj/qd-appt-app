@@ -81,7 +81,10 @@ function pickShortcut(dept: DeptTreeVo): void {
 <template>
   <view class="appt-page home">
     <view class="home__hero">
-      <text class="home__title">预约挂号</text>
+      <view class="home__brand">
+        <image class="home__mark" src="/static/brand/logo-compact-inverse-48.png" mode="aspectFit" />
+        <text class="home__title">预约挂号</text>
+      </view>
       <text class="home__sub">选择就诊院区，开始预约挂号 · 演示数据均为虚构</text>
       <text v-if="!userStore.isLogin" class="home__link" @click="goLogin">未登录，点击登录 ›</text>
       <text v-else class="home__link" @click="goMine">{{ userStore.displayName }} · 我的预约 ›</text>
@@ -150,6 +153,19 @@ function pickShortcut(dept: DeptTreeVo): void {
     height: 240rpx;
     padding: 0 32rpx;
     background: linear-gradient(135deg, #1f7a8c 0%, #2a9d8f 100%);
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  /* 简化档母标（24–48px 档）：品牌区高度 240rpx 内与标题同行，不额外占高 */
+  &__mark {
+    flex: none;
+    width: 56rpx;
+    height: 56rpx;
   }
 
   &__title {
