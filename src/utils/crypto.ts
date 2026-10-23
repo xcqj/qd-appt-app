@@ -1,15 +1,82 @@
 /**
  * AES/ECB/PKCS7 加解密（与后端 api-decrypt 对齐），移植自 `admin/src/utils/crypto.ts`。
  *
- * 与 admin 的差异：小程序端没有 `btoa/atob`，`crypto.getRandomValues` 也可能缺失，
- * 因此 base64 与随机数都用纯 JS 实现，保证 H5 / 小程序同一套代码。
+ * 与 admin 的差异（都是为了小程序端）：
+ * - 没有 `btoa/atob` → base64 纯 JS 实现；
+ * - 没有 `crypto.getRandomValues` → 随机数降级；
+ * - **没有 `TextEncoder/TextDecoder`** → UTF-8 编解码纯 JS 实现。
+ *
+ * 最后一条是硬要求：本文件被 `utils/request.ts` 顶层 import，而请求层被几乎所有页面
+ * 顶层 import。若在这里 `new TextEncoder()`，小程序会在**模块求值阶段**抛
+ * `ReferenceError: TextEncoder is not defined`，整页 JS 不执行 → 白屏（2026-10-23 真机实测）。
+ * 因此这里不用 Web API，只在可用时用它做加速，不可用时走纯 JS。
  */
 import { ecb } from '@noble/ciphers/aes.js'
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
+/** 纯 JS UTF-8 编码（不用 TextEncoder：小程序没有该全局对象） */
+function utf8Encode(text: string): Uint8Array {
+  const bytes: number[] = []
+  for (let i = 0; i < text.length; i += 1) {
+    let code = text.charCodeAt(i)
+    // 代理对（emoji 等）合并成一个码点
+    if (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) {
+      const next = text.charCodeAt(i + 1)
+      if (next >= 0xdc00 && next <= 0xdfff) {
+        code = 0x10000 + ((code - 0xd800) << 10) + (next - 0xdc00)
+        i += 1
+      }
+    }
+    if (code < 0x80) {
+      bytes.push(code)
+    } else if (code < 0x800) {
+      bytes.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f))
+    } else if (code < 0x10000) {
+      bytes.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 0x3f), 0x80 | (code & 0x3f))
+    } else {
+      bytes.push(
+        0xf0 | (code >> 18),
+        0x80 | ((code >> 12) & 0x3f),
+        0x80 | ((code >> 6) & 0x3f),
+        0x80 | (code & 0x3f),
+      )
+    }
+  }
+  return new Uint8Array(bytes)
+}
+
+/** 纯 JS UTF-8 解码（不用 TextDecoder） */
+function utf8Decode(bytes: Uint8Array): string {
+  let out = ''
+  let i = 0
+  while (i < bytes.length) {
+    const b0 = bytes[i]
+    i += 1
+    if (b0 < 0x80) {
+      out += String.fromCharCode(b0)
+    } else if (b0 < 0xe0) {
+      out += String.fromCharCode(((b0 & 0x1f) << 6) | (bytes[i] & 0x3f))
+      i += 1
+    } else if (b0 < 0xf0) {
+      out += String.fromCharCode(((b0 & 0x0f) << 12) | ((bytes[i] & 0x3f) << 6) | (bytes[i + 1] & 0x3f))
+      i += 2
+    } else {
+      const cp =
+        ((b0 & 0x07) << 18) |
+        ((bytes[i] & 0x3f) << 12) |
+        ((bytes[i + 1] & 0x3f) << 6) |
+        (bytes[i + 2] & 0x3f)
+      i += 3
+      const v = cp - 0x10000
+      out += String.fromCharCode(0xd800 + (v >> 10), 0xdc00 + (v & 0x3ff))
+    }
+  }
+  return out
+}
+
+const encoder = { encode: utf8Encode }
+const decoder = { decode: utf8Decode }
 
 function randomUint8(length: number): Uint8Array {
   const bytes = new Uint8Array(length)
