@@ -91,7 +91,17 @@ export function request<T>(options: RequestOptions): Promise<T> {
           return
         }
         if (!body) {
-          reject(new BizError(res.statusCode, '响应为空'))
+          // 非 2xx 且 body 为空，通常是「打到了别的服务」或「地址写错」——
+          // 只报「响应为空」会把状态码吞掉，排查时极易误判成后端没响应（2026-10-23 真机踩过：
+          // Windows 上 QQ 占用 8082，portproxy 静默失效，接口返回空 body 的 404）。
+          const message =
+            res.statusCode === 200
+              ? '响应为空，请稍后重试'
+              : `服务不可达（${res.statusCode}），请检查接口地址或网络`
+          if (!silent) {
+            uni.showToast({ title: message, icon: 'none' })
+          }
+          reject(new BizError(res.statusCode, message))
           return
         }
         if (body.code === 200) {
@@ -121,9 +131,10 @@ export function request<T>(options: RequestOptions): Promise<T> {
  *   header `encrypt-key` = RSA(base64(aesKey))
  *   body                 = base64(AES(json))
  */
-export function postEncrypted<T>(url: string, body: Record<string, unknown>): Promise<T> {
+export async function postEncrypted<T>(url: string, body: Record<string, unknown>): Promise<T> {
   const aesKey = generateAesKey()
-  const encryptKey = rsaEncrypt(encryptBase64(aesKey))
+  // jsencrypt 是动态加载的（见 encrypt.ts）：不进启动链路，首次登录时才拉取
+  const encryptKey = await rsaEncrypt(encryptBase64(aesKey))
   const encrypted = encryptWithAes(JSON.stringify(body), aesKey)
   return request<T>({
     url,
