@@ -46,6 +46,43 @@ pnpm dev:mp-wsl
 - 开发者工具需勾选 **不校验合法域名、web-view、TLS**（本地接口是 `http://127.0.0.1:8082`）；
 - 仓里 `manifest.json` 的 `mp-weixin.appid` 是 `touristappid` 占位；真机调试请在本地改成自己的 AppID，**不要提交**。
 
+## 小程序端真机调试（扫码签到）
+
+小程序端只做一件事：**分诊台扫码签到**（E1）。H5 没有 `uni.scanCode`，走手动补签（E2），两端口径一致。
+
+### 1. 换 AppID（否则「预览 / 真机调试」点了没反应）
+
+`touristappid` 是游客占位：微信开发者工具在这种模式下**不支持预览与真机调试**（按钮无响应、不报错）。
+
+- 取自己的 AppID：mp.weixin.qq.com → 开发管理 → 开发设置 → AppID（个人主体免费）
+- 改 **`src/manifest.json`** 的 `mp-weixin.appid`（**不要只改开发者工具里的 AppID** —— `project.config.json` 由 manifest 生成，下次构建会被覆盖回去）
+- 改完必须**重新跑** `pnpm dev:mp-wsl`（`VITE_APP_BASE_API` 是构建期注入，热更不生效）
+
+### 2. 后端地址不能用 localhost
+
+`localhost` 在手机上指向手机自己。用电脑的局域网 IP：
+
+```bash
+APPT_MP_BASE_API=http://192.168.x.x:8082 pnpm dev:mp-wsl
+```
+
+后端已监听 `0.0.0.0:8082`，手机与电脑同一 WiFi 即可；开发者工具「详情 → 本地设置」保持勾选**不校验合法域名、web-view、TLS**（真机调试同样需要）。要在公网真机验证，就得给后端挂 HTTPS 域名并配到小程序后台的 request 合法域名。
+
+### 3. 真机调试与扫码链路
+
+1. 工具工具栏 **真机调试** → 手机扫码 → 页面右上角胶囊「…」→ 打开调试（出现 vConsole）
+2. 手机登录 `appt_triage / admin123` → 底部「签到」
+3. 患者端（H5 或另一台手机）打开一条 `BOOKED` 预约 → 详情页出示二维码（内容 = `visitCode`）
+4. 分诊端点「扫一扫」→ 走 E1 `POST /appt/triage/sign`（`signType=SCAN`）；手动输入框走 E2（`signType=MANUAL`）
+
+### 4. 真机白屏怎么查
+
+工具里正常、真机空白（只有导航栏与 tabBar）＝**页面 JS 在真机抛错**，不是接口问题（模板里的静态文本也没渲染出来就是证据）。
+
+- 先看 vConsole 的 **Console** 第一条红错；
+- 若是语法/编译类，确认 `manifest.json` 的 `mp-weixin.setting` 已含 `es6 / enhance / postcss`（2026-10-23 已补齐，缺少时产物里的 `??`、`?.` 不会被降级）；
+- 若是 `window / navigator is not defined`，看 `src/utils/encrypt.ts`（`jsencrypt`）——只在登录页用到，改成 `await import('jsencrypt')` 动态加载，或按 `AGENTS.md` 换 `wxmp-rsa`。
+
 ## 端口与代理
 
 | 服务 | 端口 | 说明 |
