@@ -116,8 +116,10 @@ networkingMode=mirrored
 工具里正常、真机空白（只有导航栏与 tabBar）＝**页面 JS 在真机抛错**，不是接口问题（模板里的静态文本也没渲染出来就是证据）。
 
 - 先看 vConsole 的 **Console** 第一条红错；
+- **`Xxx is not defined`（Web API 缺失）是最常见的一类**：小程序没有 `TextEncoder/TextDecoder`、`btoa/atob`、`window`、`document`。2026-10-23 真机就踩过一次——`utils/crypto.ts` 顶层 `new TextEncoder()`，而它被 `request.ts` 顶层 import、`request` 又被所有页面顶层 import → 页面模块求值阶段抛错，整页白屏。现改为纯 JS UTF-8 编解码；
+  > 排查口诀：**报错栈里出现 `crypto.js / request.js` 且页面全白**，先查 `utils/` 下有没有 Web API 全局对象。
 - 若是语法/编译类，确认 `manifest.json` 的 `mp-weixin.setting` 已含 `es6 / enhance / postcss`（2026-10-23 已补齐，缺少时产物里的 `??`、`?.` 不会被降级）；
-- 若是 `window / navigator is not defined`，看 `src/utils/encrypt.ts`（`jsencrypt`）——只在登录页用到，改成 `await import('jsencrypt')` 动态加载，或按 `AGENTS.md` 换 `wxmp-rsa`。
+- 若是 `window / navigator is not defined` 且栈里是 `encrypt.js`，那是 `jsencrypt`（只在登录页用到）——改成 `await import('jsencrypt')` 动态加载，或按 `AGENTS.md` 换 `wxmp-rsa`。
 
 ## 端口与代理
 
