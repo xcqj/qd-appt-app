@@ -131,10 +131,9 @@ export function request<T>(options: RequestOptions): Promise<T> {
  *   header `encrypt-key` = RSA(base64(aesKey))
  *   body                 = base64(AES(json))
  */
-export async function postEncrypted<T>(url: string, body: Record<string, unknown>): Promise<T> {
+export function postEncrypted<T>(url: string, body: Record<string, unknown>): Promise<T> {
   const aesKey = generateAesKey()
-  // jsencrypt 是动态加载的（见 encrypt.ts）：不进启动链路，首次登录时才拉取
-  const encryptKey = await rsaEncrypt(encryptBase64(aesKey))
+  const encryptKey = rsaEncrypt(encryptBase64(aesKey))
   const encrypted = encryptWithAes(JSON.stringify(body), aesKey)
   return request<T>({
     url,
