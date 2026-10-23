@@ -10,7 +10,7 @@
   "scripts": {
     "dev:h5": "uni -p h5",
     "dev:mp-weixin": "uni -p mp-weixin",
-    "dev:mp-wsl": "UNI_OUTPUT_DIR=${APPT_MP_OUT_DIR:-/mnt/d/programming/project/appt-app} VITE_APP_BASE_API=${APPT_MP_BASE_API:-http://192.168.0.108:8082} uni -p mp-weixin",
+    "dev:mp-wsl": "UNI_OUTPUT_DIR=${APPT_MP_OUT_DIR:-/mnt/d/programming/project/appt-app} VITE_APP_BASE_API=${APPT_MP_BASE_API:-http://192.168.0.108:18082} uni -p mp-weixin",
     "build:h5": "uni build -p h5",
     "build:mp-weixin": "uni build -p mp-weixin",
     "type-check": "vue-tsc --noEmit",

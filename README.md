@@ -68,24 +68,28 @@ APPT_MP_BASE_API=http://192.168.x.x:8082 pnpm dev:mp-wsl
 
 后端已监听 `0.0.0.0:8082`，手机与电脑同一 WiFi 即可；开发者工具「详情 → 本地设置」保持勾选**不校验合法域名、web-view、TLS**（真机调试同样需要）。要在公网真机验证，就得给后端挂 HTTPS 域名并配到小程序后台的 request 合法域名。
 
-> `dev:mp-wsl` 的默认 baseApi 已写成本机网卡地址 `http://192.168.0.108:8082`；换机器/换网段时用 `APPT_MP_BASE_API=... pnpm dev:mp-wsl` 覆盖，别改脚本。
+> `dev:mp-wsl` 的默认 baseApi 已写成本机网卡 + **转发端口** `http://192.168.0.108:18082`（不是后端原始的 8082，原因见 2.1）；换机器/换网段时用 `APPT_MP_BASE_API=... pnpm dev:mp-wsl` 覆盖，别改脚本。
 
 ### 2.1 WSL2 下让手机访问后端（必做）
 
 后端跑在 WSL 里，`192.168.0.108` 是 **Windows 网卡**，默认不会把连接转发进 WSL —— 表现为手机浏览器打不开、小程序报网络错误。二选一开通：
 
+> **端口别用 8082**：Windows 上 `QQ.exe` 会占用 8082（本地互联服务），`netsh portproxy` 因端口被占**静默绑定失败**，访问 `192.168.0.108:8082` 实际打到 QQ 的 HTTP 服务，返回**空 body 的 404**（前端表现为 `request.ts` 的「响应为空」，且后端日志里查不到请求）。因此本文统一用 **18082** 做转发口。
+
 **A) 端口代理（管理员 PowerShell，推荐）**
 
 ```powershell
-netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=8082 connectaddress=127.0.0.1 connectport=8082
-netsh advfirewall firewall add rule name="appt-8082" dir=in action=allow protocol=TCP localport=8082
-netsh interface portproxy show v4tov4
-# 撤销：netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=8082
+# 先查 WSL 的 IPv4（WSL 里执行：hostname -I | awk '{print $1}'）
+netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=18082 connectaddress=<WSL_IP> connectport=8082
+netsh advfirewall firewall add rule name="appt-18082" dir=in action=allow protocol=TCP localport=18082
+netsh interface portproxy show v4tov4      # 必须看到 0.0.0.0:18082 → <WSL_IP>:8082
+# 撤销：netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=18082
 ```
 
-> 借的是 WSL2 默认开启的 `localhostForwarding`：Windows 的 `127.0.0.1:8082` 已被转发到 WSL 的 8082，portproxy 负责把「局域网网卡的 8082」也接进来。
+> `connectaddress` **必须填 WSL 的 IPv4**（如 `172.31.124.129`），不能填 `127.0.0.1`：Windows 的 `localhost` 走 IPv6 回环 `[::1]:8082`（WSL 的 localhost 转发落在这里），IPv4 的 `127.0.0.1:8082` 上并没有监听。WSL 重启后 IP 会变，需重加。
+> `netsh add` 在端口被占或条目已存在时**不报错**，所以每次都要 `show v4tov4` 复核。
 
-**B) 镜像网络（Win11 22H2+）**
+**B) 镜像网络（Win11 22H2+，Win10 不支持）**
 
 `%USERPROFILE%\.wslconfig`：
 
@@ -99,9 +103,10 @@ networkingMode=mirrored
 **验证顺序（务必先用手机浏览器，别先开小程序）**：
 
 ```text
-手机浏览器打开 http://192.168.0.108:8082/appt/public/campus/list
+手机浏览器打开 http://192.168.0.108:18082/appt/public/campus/list
 → 看到 {"code":200,"data":[{"campusId":...}]} 才算通
-→ 打不开就是 portproxy / 防火墙 / 手机不在同一网段
+→ 打不开：portproxy 未生效 / 防火墙 / 手机不在同一网段
+→ 返回空 body 的 404：端口被 Windows 本地程序占用（QQ 常见），换一个 listenport
 ```
 
 ### 3. 真机调试与扫码链路
