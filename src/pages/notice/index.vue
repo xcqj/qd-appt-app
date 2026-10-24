@@ -14,6 +14,7 @@ import { listNotices, markNoticeRead } from '@/api/appt/notice'
 import PageState from '@/components/PageState.vue'
 import { refreshUnreadBadge } from '@/composables/useUnreadBadge'
 import { navigateTo, ROUTES } from '@/router/routes'
+import { useUserStore } from '@/store/user'
 import { BizError } from '@/types/api'
 import { bizMessage, noticeTypeLabel, shortDateTime } from '@/utils/appt'
 
@@ -25,6 +26,8 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 ]
 
 const PAGE_SIZE = 10
+
+const userStore = useUserStore()
 
 const activeTab = ref<TabKey>('all')
 const rows = ref<NoticeVo[]>([])
@@ -39,6 +42,12 @@ const finished = computed(() => rows.value.length >= total.value)
 const emptyText = computed(() => (activeTab.value === 'unread' ? '没有未读消息' : '暂无消息'))
 
 async function load(reset: boolean): Promise<void> {
+  // 未登录不请求（守卫放行 tab 页，页面自己渲染未登录态，避免 401 把人弹走）
+  if (!userStore.isLogin) {
+    rows.value = []
+    total.value = 0
+    return
+  }
   if (reset) {
     pageNum.value = 1
     loading.value = true
@@ -64,6 +73,10 @@ async function load(reset: boolean): Promise<void> {
     loading.value = false
     loadingMore.value = false
   }
+}
+
+function goLogin(): void {
+  navigateTo(ROUTES.login)
 }
 
 function switchTabTo(key: TabKey): void {
@@ -135,7 +148,15 @@ onReachBottom(() => {
     </view>
 
     <view class="appt-content notice__body">
+      <PageState v-if="!userStore.isLogin" :empty="true" empty-text="未登录，无法查看消息"
+        empty-desc="登录后可查看预约、支付与停诊通知">
+        <template #empty-action>
+          <wd-button size="small" type="primary" @click="goLogin">去登录</wd-button>
+        </template>
+      </PageState>
+
       <PageState
+        v-else
         :loading="loading"
         :error="error"
         :empty="isEmpty"

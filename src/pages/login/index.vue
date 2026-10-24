@@ -46,6 +46,9 @@ async function submit() {
     })
     if (mode === 'triage') {
       uni.reLaunch({ url: ROUTES.triageSign })
+    } else if (getCurrentPages().length > 1) {
+      // 从受保护页/未登录态叠进来的：回退到来源页，tabBar 与来源上下文都保留
+      uni.navigateBack()
     } else {
       uni.switchTab({ url: ROUTES.home })
     }
