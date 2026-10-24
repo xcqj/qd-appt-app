@@ -32,6 +32,11 @@ function pathOf(url?: string): string {
   if (!path) {
     return ''
   }
+  if (path === '/') {
+    // H5 的 tabBar 点「首页」时，uni 传进来的 url 就是根路径 `/`（首页即根路由），
+    // 白名单里只有 `/pages/index/index`，不换算会判成未知页 → 未登录被拦去登录页。
+    return ROUTES.home
+  }
   if (!path.startsWith('/')) {
     path = `/${path}`
   }
