@@ -119,6 +119,12 @@
       "style": {
         "navigationBarTitleText": "停诊上报"
       }
+    },
+    {
+      "path": "pages/fallback/index",
+      "style": {
+        "navigationBarTitleText": "页面不存在"
+      }
     }
   ],
   "globalStyle": {

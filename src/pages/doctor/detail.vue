@@ -116,7 +116,7 @@ onLoad((query) => {
                 <text class="doctor-detail__tag">{{ clinicTypeLabel(staff.clinicType) }}</text>
                 <text v-if="availability" class="doctor-detail__tag doctor-detail__tag--ghost">{{ availability }}</text>
                 <text
-                  class="doctor-detail__tag doctor-detail__tag--ghost"
+                  class="doctor-detail__tag doctor-detail__tag--ghost appt-press"
                   :class="{ 'doctor-detail__tag--on': favorited }"
                   @click="toggleFavorite"
                 >{{ favoriteBusy ? '处理中…' : favorited ? '已收藏' : '收藏' }}</text>

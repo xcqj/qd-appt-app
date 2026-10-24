@@ -30,6 +30,8 @@ export const ROUTES = {
   triageSign: '/pages/triage/sign/index',
   triageList: '/pages/triage/list',
   triageSuspend: '/pages/triage/suspend',
+  /** 兜底页（DESIGN §9.12 / §9.13）：mode=notfound|offline */
+  fallback: '/pages/fallback/index',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]
@@ -48,6 +50,8 @@ export const WHITE_LIST: string[] = [
   ROUTES.doctorDetail,
   ROUTES.schedule,
   ROUTES.slots,
+  // 兜底页必须未登录可达，否则弱网/错链会把人踢去登录页
+  ROUTES.fallback,
 ]
 
 /** 原生 tabBar 页面（只能用 switchTab 跳） */

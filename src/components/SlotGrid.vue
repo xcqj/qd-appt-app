@@ -16,7 +16,7 @@ const emit = defineEmits<{ 'update:modelValue': [slot: SlotVo] }>()
     <view
       v-for="item in slots"
       :key="item.slotId"
-      class="slot-grid__cell"
+      class="slot-grid__cell appt-press"
       :class="{ 'slot-grid__cell--active': item.slotId === modelValue }"
       @click="emit('update:modelValue', item)"
     >

@@ -3,9 +3,12 @@ import { onLaunch, onShow } from '@dcloudio/uni-app'
 
 import { bootstrap } from '@/bootstrap'
 import { refreshUnreadBadge } from '@/composables/useUnreadBadge'
+import { setupH5Fallback } from '@/router/h5-fallback'
 
 onLaunch(() => {
   bootstrap()
+  // H5 错链兜底（小程序端为空实现，见 DESIGN §9.12）
+  setupH5Fallback()
 })
 
 // 回到前台时刷新「消息」tab 未读角标（未登录时内部自动清零，不会报错）

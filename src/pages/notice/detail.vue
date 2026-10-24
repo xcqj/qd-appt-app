@@ -95,7 +95,7 @@ onLoad((query) => {
         </view>
 
         <view class="notice-detail__footer">
-          <wd-button size="small" variant="plain" @click="goBack()">返回列表</wd-button>
+          <text class="notice-detail__back appt-press" @click="goBack()">返回列表</text>
         </view>
       </PageState>
     </view>
@@ -151,11 +151,20 @@ onLoad((query) => {
     font-size: 28rpx;
     line-height: 1.7;
     color: var(--appt-text);
+    /* 后端正文是纯文本，段间靠换行分段（DESIGN §9.14） */
+    white-space: pre-wrap;
   }
 
   &__footer {
     padding: 32rpx 0;
     text-align: center;
+  }
+
+  /* 返回入口按 §9.14 出图校准：纯文字链，不套按钮边框 */
+  &__back {
+    font-size: 26rpx;
+    line-height: 1.5;
+    color: var(--appt-primary);
   }
 }
 </style>

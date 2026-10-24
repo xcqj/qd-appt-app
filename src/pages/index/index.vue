@@ -16,6 +16,7 @@ import { navigateTo, ROUTES, switchTab } from '@/router/routes'
 import type { CampusRef } from '@/store/booking'
 import { useBookingStore } from '@/store/booking'
 import { useUserStore } from '@/store/user'
+import { goFallback } from '@/utils/fallback'
 
 const booking = useBookingStore()
 const userStore = useUserStore()
@@ -48,8 +49,16 @@ async function loadShortcuts(): Promise<void> {
   }
 }
 
+/** 首屏院区列表是整条挂号链路的入口：拿不到就进兜底页，不在首页留一个空壳 */
+async function loadCampuses(): Promise<void> {
+  const list = await run()
+  if (!list && error.value) {
+    goFallback('offline')
+  }
+}
+
 onShow(() => {
-  void run()
+  void loadCampuses()
   void loadShortcuts()
 })
 

@@ -247,6 +247,8 @@ async function main() {
   // 3b. 简化档 PNG（24–48px 显示用：移动端页头、消息占位）
   await write(join(brandDir, 'logo-compact-48.png'), rasterize(markSvg('compact', COLOR.primary, 48), 48))
   await write(join(brandDir, 'logo-compact-inverse-48.png'), rasterize(markSvg('compact', COLOR.inverse, 48), 48))
+  // 3c. 纯十字档大图：兜底页水印（DESIGN §9.12，页面内以 96rpx、20% 透明度显示）
+  await write(join(brandDir, 'logo-cross-128.png'), rasterize(markSvg('crossOnly', COLOR.primary, 128), 128))
 
   // 4. 横版组合与封面
   const horizontal = horizontalSvg(COLOR.primary)
@@ -285,6 +287,8 @@ async function main() {
   if (hasAdmin) {
     await write(join(ADMIN_ROOT, 'src/assets/logo/logo.png'), rasterize(markSvg('full', COLOR.primary, 128), 128))
     await write(join(ADMIN_ROOT, 'src/assets/logo/logo-white.png'), rasterize(markSvg('full', COLOR.inverse, 128), 128))
+    // 后台 404 / 兜底页水印：纯十字档，页面内以 20% 透明度显示（admin AGENTS §13.5）
+    await write(join(ADMIN_ROOT, 'src/assets/logo/logo-cross.png'), rasterize(markSvg('crossOnly', COLOR.primary, 128), 128))
     // 顶栏 / 侧栏按 28–32px 显示，走 24–48 简化档（§12.2 尺寸映射）
     await write(join(ADMIN_ROOT, 'src/assets/logo/logo-compact.png'), rasterize(markSvg('compact', COLOR.primary, 48), 48))
     await write(join(ADMIN_ROOT, 'src/assets/logo/logo-compact-white.png'), rasterize(markSvg('compact', COLOR.inverse, 48), 48))
