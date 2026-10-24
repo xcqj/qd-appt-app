@@ -10,7 +10,7 @@
  * 未登录可进的 tab（S12.5）：预约 / 消息 / 我的 —— 这三页在页内渲染「未登录」态并给登录入口，
  * 避免「点一下就整屏跳走、底栏消失」的体验（DESIGN §8.3）。
  */
-import { ROUTES, WHITE_LIST } from '@/router/routes'
+import { ROUTES, TAB_PAGES, WHITE_LIST } from '@/router/routes'
 import { getStoredUser, getToken } from '@/utils/storage'
 
 const METHODS = ['navigateTo', 'redirectTo', 'reLaunch', 'switchTab'] as const
@@ -20,8 +20,22 @@ const TRIAGE_PREFIX = '/pages/triage/'
 /** 未登录也能停留的 tab 页（页内自带未登录态） */
 const GUEST_TABS: string[] = [ROUTES.registration, ROUTES.notice, ROUTES.mine]
 
+/**
+ * 归一化跳转路径。
+ *
+ * 真机/H5 的 tabBar 点击与部分内部跳转传进来的 url **不一定带前导斜杠**（也有带 `#`
+ * 的形态），早先直接 `split('?')[0]` 去比白名单，会把 `/pages/index/index` 判成未知页
+ * → 未登录点首页被拦去登录页（2026-10-24 实测踩到）。
+ */
 function pathOf(url?: string): string {
-  return (url ?? '').split('?')[0]
+  let path = (url ?? '').split('?')[0].replace(/^#/, '')
+  if (!path) {
+    return ''
+  }
+  if (!path.startsWith('/')) {
+    path = `/${path}`
+  }
+  return path.replace(/\/{2,}/g, '/')
 }
 
 function isTriage(): boolean {
@@ -39,7 +53,15 @@ export function setupGuard(): void {
 
         const logged = Boolean(getToken())
 
-        if (!logged && !WHITE_LIST.includes(path) && !GUEST_TABS.includes(path)) {
+        // tab 页（原生底栏四项）一律放行：底栏可见本身就是「还能去哪」的兜底，
+        // 未登录时由页内渲染未登录态（首页白名单、其余见 GUEST_TABS）
+        const isTabPage = TAB_PAGES.includes(path)
+
+        if (!logged && !isTabPage && !WHITE_LIST.includes(path) && !GUEST_TABS.includes(path)) {
+          // dev 下留痕：拦截原因只看这一行就能定位（生产不打印）
+          if (import.meta.env.DEV) {
+            console.warn('[guard] 未登录拦截跳转 → 登录页：', path)
+          }
           uni.navigateTo({ url: ROUTES.login })
           return false
         }
