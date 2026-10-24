@@ -21,11 +21,15 @@ const TRIAGE_PREFIX = '/pages/triage/'
 const GUEST_TABS: string[] = [ROUTES.registration, ROUTES.notice, ROUTES.mine]
 
 /**
- * 归一化跳转路径。
+ * 归一化跳转路径（守卫判权限前必须先过这里，不要各写一套 `split('?')`）。
  *
- * 真机/H5 的 tabBar 点击与部分内部跳转传进来的 url **不一定带前导斜杠**（也有带 `#`
- * 的形态），早先直接 `split('?')[0]` 去比白名单，会把 `/pages/index/index` 判成未知页
- * → 未登录点首页被拦去登录页（2026-10-24 实测踩到）。
+ * 四步，缺一步都会误判：
+ * 1. **切 query**：浏览链路大量带参（`/pages/doctor/detail?staffId=…`、`?deptId=…`、
+ *    `?date=…`），白名单里存的是纯页面路径，不切就永远匹配不上——未登录浏览医生主页、
+ *    选科室、选时间会被误拦去登录页。
+ * 2. **去 `#`**：hash 路由形态传进来的可能是 `#/pages/x`。
+ * 3. **尾部斜杠归一**：`/pages/x/` 与 `/pages/x` 是同一页。
+ * 4. **根路径折算首页**：H5 tabBar 点「首页」传的就是 `/`（首页即根路由）。
  */
 function pathOf(url?: string): string {
   let path = (url ?? '').split('?')[0].replace(/^#/, '')
@@ -33,8 +37,10 @@ function pathOf(url?: string): string {
     return ''
   }
   if (path === '/') {
-    // H5 的 tabBar 点「首页」时，uni 传进来的 url 就是根路径 `/`（首页即根路由），
-    // 白名单里只有 `/pages/index/index`，不换算会判成未知页 → 未登录被拦去登录页。
+    return ROUTES.home
+  }
+  path = path.replace(/\/+$/, '')
+  if (!path) {
     return ROUTES.home
   }
   if (!path.startsWith('/')) {
