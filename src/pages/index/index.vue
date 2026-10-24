@@ -49,10 +49,16 @@ async function loadShortcuts(): Promise<void> {
   }
 }
 
-/** 首屏院区列表是整条挂号链路的入口：拿不到就进兜底页，不在首页留一个空壳 */
+/**
+ * 首屏院区列表是整条挂号链路的入口。
+ *
+ * 只有**真离线**（`navigator.onLine === false`）才跳兜底页；接口偶发失败仍走页内错误态 + 重试。
+ * 原因：冷启动时首帧请求可能先于登录态恢复/路由就绪，一律跳兜底会让「打开链接就看到网络异常」，
+ * 反而像故障（2026-10-24 截图脚本实测复现：同 URL 有时首页、有时兜底页）。
+ */
 async function loadCampuses(): Promise<void> {
   const list = await run()
-  if (!list && error.value) {
+  if (!list && error.value && navigator.onLine === false) {
     goFallback('offline')
   }
 }
