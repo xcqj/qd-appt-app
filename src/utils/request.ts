@@ -32,8 +32,19 @@ export interface RequestOptions {
   silent?: boolean
 }
 
-/** 并发 401 只跳一次登录页 */
+/**
+ * 并发 401 只跳一次登录页。
+ *
+ * 不用 `reLaunch`：那会清空页面栈并让 tabBar 消失，用户登录完只能回首页。
+ * 改为叠一层登录页（`navigateTo`），登录成功后由登录页 `navigateBack` 回到原页面。
+ */
 let redirecting = false
+
+function currentPath(): string {
+  const pages = getCurrentPages()
+  const top = pages[pages.length - 1] as { route?: string } | undefined
+  return top?.route ? `/${top.route}` : ''
+}
 
 function handleUnauthorized(): void {
   if (redirecting) {
@@ -41,8 +52,19 @@ function handleUnauthorized(): void {
   }
   redirecting = true
   clearAuth()
-  uni.reLaunch({
+  const onLogin = currentPath() === '/pages/login/index'
+  if (onLogin) {
+    setTimeout(() => {
+      redirecting = false
+    }, 1500)
+    return
+  }
+  uni.navigateTo({
     url: '/pages/login/index',
+    fail: () => {
+      // 栈满等极端情况兜底
+      uni.reLaunch({ url: '/pages/login/index' })
+    },
     complete: () => {
       setTimeout(() => {
         redirecting = false

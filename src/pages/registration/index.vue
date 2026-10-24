@@ -132,6 +132,10 @@ async function resolveDefaultTab(): Promise<void> {
   if (defaultResolved || tabPicked.value) {
     return
   }
+  // 未登录不探测：B2 需要登录态，发了只会 401 把用户弹去登录页
+  if (!userStore.isLogin) {
+    return
+  }
   defaultResolved = true
   try {
     const page = await listRegistrations({ status: 'WAIT_PAY', pageNum: 1, pageSize: 1 })
