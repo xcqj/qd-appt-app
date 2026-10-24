@@ -49,7 +49,8 @@ async function handleLogout(): Promise<void> {
   // 退出时清掉挂号上下文与未读角标，避免换账号后串号
   booking.reset()
   clearUnreadBadge()
-  uni.reLaunch({ url: ROUTES.login })
+  // 回首页（tab 页）而不是登录页：底栏保留，用户想登录再点页内入口
+  switchTab(ROUTES.home)
 }
 
 /** 危险操作二次确认（DESIGN §5 #12、§9.11） */

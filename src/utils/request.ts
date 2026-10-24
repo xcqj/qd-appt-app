@@ -47,7 +47,11 @@ function currentPath(): string {
 }
 
 function handleUnauthorized(): void {
-  if (redirecting) {
+  // 本来就没有 token（纯未登录态）：不跳登录页，让页面自己渲染未登录态。
+  // 只有「有 token 却过期」才需要把用户带去登录页。
+  const hadToken = Boolean(getToken())
+  if (redirecting || !hadToken) {
+    clearAuth()
     return
   }
   redirecting = true
