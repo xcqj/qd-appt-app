@@ -349,3 +349,47 @@ export function refundDeadlineLabel(visitDate: string): string {
   const date = new Date(deadline)
   return `${date.getMonth() + 1}月${date.getDate()}日 23:00`
 }
+
+/* ------------------------------ 就诊流程五步（S15，DESIGN §8.3） ------------------------------ */
+
+/** 流程节点名：**唯一出处**，首页静态说明与详情页三态条共用（改字只改这里） */
+export const REG_STEPS = ['预约', '支付', '签到', '候诊', '就诊'] as const
+
+/** 节点状态：已完成 / 当前 / 未开始 */
+export type StepState = 'done' | 'current' | 'pending'
+
+export interface RegStepProgress {
+  /** 五个节点的状态；`null` = 不渲染流程条（未知状态 / 终态） */
+  states: StepState[] | null
+  /** 终态说明：非空时流程条整体不点亮，只显示这一句 */
+  terminatedText: string
+}
+
+const TERMINATED_TEXT: Record<string, string> = {
+  CANCELED_ACTIVE: '本次预约已退号，就诊流程已终止',
+  CANCELED_PASSIVE: '因医生停诊已退号，就诊流程已终止',
+  CLOSED: '本次预约已关闭，就诊流程已终止',
+  NOSHOW: '本次预约已爽约，就诊流程已终止',
+}
+
+/**
+ * 预约状态 → 流程条进度（纯映射，组件只消费结果）
+ *
+ * - `WAIT_PAY` 支付为当前；`BOOKED` 签到为当前；`SIGNED` 候诊为当前；`COMPLETED` 全部已完成
+ * - 四个终态只给终止说明，**不点亮任何节点**（不能让已退号的单看起来停在某一步）
+ * - 未知状态一律不渲染：宁可不显示，也不误报阶段
+ */
+export function regStepProgress(status?: string | null): RegStepProgress {
+  switch (status) {
+    case 'WAIT_PAY':
+      return { states: ['done', 'current', 'pending', 'pending', 'pending'], terminatedText: '' }
+    case 'BOOKED':
+      return { states: ['done', 'done', 'current', 'pending', 'pending'], terminatedText: '' }
+    case 'SIGNED':
+      return { states: ['done', 'done', 'done', 'current', 'pending'], terminatedText: '' }
+    case 'COMPLETED':
+      return { states: ['done', 'done', 'done', 'done', 'done'], terminatedText: '' }
+    default:
+      return { states: null, terminatedText: TERMINATED_TEXT[status ?? ''] ?? '' }
+  }
+}

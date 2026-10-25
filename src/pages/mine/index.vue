@@ -8,6 +8,7 @@
 import { onShow } from '@dcloudio/uni-app'
 import { computed } from 'vue'
 
+import AppFooter from '@/components/AppFooter.vue'
 import { clearUnreadBadge } from '@/composables/useUnreadBadge'
 import { navigateTo, ROUTES, switchTab } from '@/router/routes'
 import { useBookingStore } from '@/store/booking'
@@ -42,6 +43,11 @@ const triageEntries: MineEntry[] = [
 
 function goLogin(): void {
   navigateTo(ROUTES.login)
+}
+
+/** 就诊指南未登录也可读（只含院区信息与规则），故不进需登录的账户组 */
+function goGuide(): void {
+  navigateTo(ROUTES.guide)
 }
 
 async function handleLogout(): Promise<void> {
@@ -98,6 +104,13 @@ onShow(() => {
       </view>
     </view>
 
+    <view class="mine__group">
+      <view class="mine__row appt-press" @click="goGuide">
+        <text class="mine__row-label">院区与就诊指南</text>
+        <text class="mine__row-arrow">›</text>
+      </view>
+    </view>
+
     <view v-if="userStore.isTriage" class="mine__group">
       <view v-for="item in triageEntries" :key="item.label" class="mine__row appt-press" @click="item.act()">
         <text class="mine__row-label">{{ item.label }}</text>
@@ -111,7 +124,7 @@ onShow(() => {
       </view>
     </view>
 
-    <text class="mine__footnote">演示项目：数据全部虚构，支付走模拟渠道，不提供真实医疗服务。</text>
+    <AppFooter />
   </view>
 </template>
 
@@ -199,14 +212,6 @@ onShow(() => {
 
   &__row--danger {
     justify-content: center;
-  }
-
-  &__footnote {
-    display: block;
-    margin-top: 32rpx;
-    font-size: 20rpx;
-    line-height: 1.6;
-    color: var(--appt-text-weak);
   }
 }
 </style>

@@ -11,13 +11,16 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AppFooter: typeof import('./components/AppFooter.vue')['default']
     DateStrip: typeof import('./components/DateStrip.vue')['default']
     DoctorCard: typeof import('./components/DoctorCard.vue')['default']
+    EmergencyTip: typeof import('./components/EmergencyTip.vue')['default']
     EmptyState: typeof import('./components/EmptyState.vue')['default']
     MoneyText: typeof import('./components/MoneyText.vue')['default']
     PageState: typeof import('./components/PageState.vue')['default']
     SlotGrid: typeof import('./components/SlotGrid.vue')['default']
     StatusTag: typeof import('./components/StatusTag.vue')['default']
+    StepGuide: typeof import('./components/StepGuide.vue')['default']
     TriageTabbar: typeof import('./components/TriageTabbar.vue')['default']
     WdButton: typeof import('@wot-ui/ui/components/wd-button/wd-button.vue')['WdButton']
     WdCountDown: typeof import('@wot-ui/ui/components/wd-count-down/wd-count-down.vue')['WdCountDown']

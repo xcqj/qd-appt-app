@@ -13,9 +13,12 @@ import { computed, ref } from 'vue'
 
 import type { RegistrationDetailVo } from '@/api/appt/types'
 import { cancelRegistration, getRegistrationDetail } from '@/api/appt/patient'
+import AppFooter from '@/components/AppFooter.vue'
+import EmergencyTip from '@/components/EmergencyTip.vue'
 import MoneyText from '@/components/MoneyText.vue'
 import PageState from '@/components/PageState.vue'
 import StatusTag from '@/components/StatusTag.vue'
+import StepGuide from '@/components/StepGuide.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { navigateTo, ROUTES } from '@/router/routes'
 import {
@@ -28,7 +31,9 @@ import {
   refundStatusLabel,
   regStatusLabel,
   regStatusTone,
+  regStepProgress,
   shortDateTime,
+  titleLabel,
   visitTimeText,
 } from '@/utils/appt'
 
@@ -68,6 +73,9 @@ const statusHint = computed(() => {
 
 const codeVisible = computed(() => Boolean(detail.value?.visitCode) && canShowVisitCode(status.value))
 
+/** 流程引导条（DESIGN §9.10）：三态；四个终态只给一句终止说明，不点亮任何节点 */
+const progress = computed(() => regStepProgress(status.value))
+
 const visitText = computed(() =>
   detail.value ? visitTimeText(detail.value.visitDate, detail.value.period, detail.value.timePoint) : '',
 )
@@ -78,7 +86,8 @@ const infoRows = computed(() => {
     return []
   }
   return [
-    { label: '就诊医生', value: [item.staff?.name, item.staff?.title].filter(Boolean).join(' ') },
+    // 职称是线值（CHIEF / PHYSICIAN…），必须走 titleLabel 中文映射（DESIGN §8.1 / 红线 3）
+    { label: '就诊医生', value: [item.staff?.name, titleLabel(item.staff?.title)].filter(Boolean).join(' ') },
     { label: '就诊科室', value: item.staff?.deptName ?? '' },
     { label: '就诊院区', value: item.staff?.campusName ?? '' },
     { label: '就诊时间', value: visitText.value },
@@ -192,6 +201,15 @@ onShow(() => {
         </view>
 
         <view class="appt-content detail__body">
+          <!-- 流程引导条（三态；终态只留一句终止说明） -->
+          <view v-if="progress.states || progress.terminatedText" class="appt-card detail__guide">
+            <StepGuide
+              :states="progress.states"
+              :terminated-text="progress.terminatedText"
+              title="就诊流程"
+            />
+          </view>
+
           <!-- 就诊码 -->
           <view class="appt-card detail__code">
             <template v-if="codeVisible">
@@ -264,6 +282,9 @@ onShow(() => {
               <text class="appt-weak detail__cancel-tip">{{ cancelTip }}</text>
             </template>
           </view>
+
+          <EmergencyTip />
+          <AppFooter />
         </view>
       </template>
     </PageState>

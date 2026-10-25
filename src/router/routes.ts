@@ -27,6 +27,12 @@ export const ROUTES = {
   registrationDetail: '/pages/registration/detail',
   patientList: '/pages/patient/index',
   favoriteList: '/pages/favorite/index',
+  /** 就诊指南（S15，DESIGN §9.15）：院区信息 + 规则入口 + 急诊提示 */
+  guide: '/pages/guide/index',
+  /** 挂号须知与规则（S15，DESIGN §9.17）：静态条款页 */
+  guideRules: '/pages/guide/rules',
+  /** 院区详情（S15，DESIGN §9.16）：`?campusId=`，字符串传参 */
+  campusInfo: '/pages/campus/info',
   triageSign: '/pages/triage/sign/index',
   triageList: '/pages/triage/list',
   triageSuspend: '/pages/triage/suspend',
@@ -52,6 +58,10 @@ export const WHITE_LIST: string[] = [
   ROUTES.slots,
   // 兜底页必须未登录可达，否则弱网/错链会把人踢去登录页
   ROUTES.fallback,
+  // 信息展示型页面（S15）：只读、不含个人数据，未登录也必须能查院区与规则
+  ROUTES.guide,
+  ROUTES.guideRules,
+  ROUTES.campusInfo,
 ]
 
 /** 原生 tabBar 页面（只能用 switchTab 跳） */

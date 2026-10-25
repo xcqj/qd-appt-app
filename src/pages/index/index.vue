@@ -10,7 +10,10 @@ import { computed, ref } from 'vue'
 
 import type { CampusVo, DeptTreeVo } from '@/api/appt/types'
 import { getDeptTree, listCampus } from '@/api/appt/public'
+import AppFooter from '@/components/AppFooter.vue'
+import EmergencyTip from '@/components/EmergencyTip.vue'
 import PageState from '@/components/PageState.vue'
+import StepGuide from '@/components/StepGuide.vue'
 import { useAsyncData } from '@/composables/useAsyncData'
 import { navigateTo, ROUTES, switchTab } from '@/router/routes'
 import type { CampusRef } from '@/store/booking'
@@ -91,6 +94,15 @@ function pickShortcut(dept: DeptTreeVo): void {
   }
   navigateTo(ROUTES.dept, { rootId: dept.deptId })
 }
+
+/** 院区卡次入口（DESIGN §9.1）：只进院区详情，不改动卡片主体的选院区语义 */
+function goCampusInfo(campus: CampusVo): void {
+  navigateTo(ROUTES.campusInfo, { campusId: campus.campusId })
+}
+
+function goRules(): void {
+  navigateTo(ROUTES.guideRules)
+}
 </script>
 
 <template>
@@ -128,13 +140,21 @@ function pickShortcut(dept: DeptTreeVo): void {
             @click="pickCampus(campus)"
           >
             <view class="home__campus-info">
-              <text class="appt-title">{{ campus.name }}</text>
+              <view class="home__campus-head">
+                <text class="appt-title">{{ campus.name }}</text>
+                <text class="home__campus-more" @click.stop="goCampusInfo(campus)">院区信息</text>
+              </view>
               <text class="home__campus-addr">{{ campus.address || '地址信息暂缺' }}</text>
             </view>
             <text class="home__chevron">›</text>
           </view>
         </view>
       </PageState>
+
+      <view class="appt-card home__guide">
+        <StepGuide title="就诊流程" />
+        <text class="appt-link home__guide-link" @click="goRules">查看预约须知 ›</text>
+      </view>
 
       <view v-if="shortcuts.length" class="home__shortcuts">
         <text class="appt-section-title">{{ shortcutTitle }}</text>
@@ -150,7 +170,8 @@ function pickShortcut(dept: DeptTreeVo): void {
         </view>
       </view>
 
-      <text class="home__footnote">本系统为演示环境，数据均为虚构，支付走模拟渠道，不提供真实医疗服务。</text>
+      <EmergencyTip />
+      <AppFooter />
     </view>
   </view>
 </template>
@@ -232,8 +253,29 @@ function pickShortcut(dept: DeptTreeVo): void {
 
   &__campus-info {
     display: flex;
+    flex: 1;
     flex-direction: column;
     min-width: 0;
+  }
+
+  &__campus-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /*
+   * 次入口：`@click.stop` 只进院区详情。
+   * 触控高度靠 padding 撑到 88rpx，再用等量负 margin 抵掉占位 ——
+   * 卡片高度与名称/地址间距维持原样，不做成「一行两箭头」也不把卡撑高。
+   */
+  &__campus-more {
+    flex: none;
+    margin: -28rpx 0 -28rpx 16rpx;
+    padding: 28rpx 0 28rpx 16rpx;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--appt-primary);
   }
 
   &__campus-addr {
@@ -247,6 +289,17 @@ function pickShortcut(dept: DeptTreeVo): void {
     margin-left: 16rpx;
     font-size: 36rpx;
     color: var(--appt-text-weak);
+  }
+
+  /* 流程说明卡：静态五步，不发请求（DESIGN §9.1） */
+  &__guide {
+    margin-top: 20rpx;
+  }
+
+  &__guide-link {
+    display: block;
+    margin-top: 20rpx;
+    text-align: right;
   }
 
   &__shortcuts {
@@ -275,12 +328,5 @@ function pickShortcut(dept: DeptTreeVo): void {
     text-align: center;
   }
 
-  &__footnote {
-    display: block;
-    margin-top: 40rpx;
-    font-size: 20rpx;
-    line-height: 1.6;
-    color: var(--appt-text-weak);
-  }
 }
 </style>

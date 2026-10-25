@@ -125,6 +125,24 @@
       "style": {
         "navigationBarTitleText": "页面不存在"
       }
+    },
+    {
+      "path": "pages/guide/index",
+      "style": {
+        "navigationBarTitleText": "就诊指南"
+      }
+    },
+    {
+      "path": "pages/guide/rules",
+      "style": {
+        "navigationBarTitleText": "挂号须知与规则"
+      }
+    },
+    {
+      "path": "pages/campus/info",
+      "style": {
+        "navigationBarTitleText": "院区详情"
+      }
     }
   ],
   "globalStyle": {
