@@ -32,7 +32,7 @@ const TABS = [
 
 const TAB_KEYS = TABS.map((tab) => tab.key)
 
-const SUBS = [
+const CANCELED_SUBS = [
   { key: 'CANCELED_ACTIVE', label: '主动退号' },
   { key: 'CANCELED_PASSIVE', label: '停诊退号' },
   { key: 'NOSHOW', label: '已爽约' },
@@ -40,10 +40,25 @@ const SUBS = [
   { key: 'CLOSED', label: '已关闭' },
 ]
 
+/**
+ * 「已预约」tab 的二级：已预约 / 已签到（S15.2）
+ *
+ * 到院签到后预约会从「已预约」变成「已签到」，此前列表里没有任何入口；
+ * B2 的 `status` 必填且一次只查一个状态（契约 §4.2），所以拆成子筛选而不是合并查询。
+ */
+const BOOKED_SUBS = [
+  { key: 'BOOKED', label: '已预约' },
+  { key: 'SIGNED', label: '已签到' },
+]
+
 const PAGE_SIZE = 10
 
 const activeTab = ref('WAIT_PAY')
-const activeSub = ref('CANCELED_ACTIVE')
+/** 各 tab 自己的子状态：离开再回来记住上次所选，默认取子项第一项 */
+const subState = ref<Record<string, string>>({
+  BOOKED: BOOKED_SUBS[0].key,
+  CANCELED: CANCELED_SUBS[0].key,
+})
 const rows = ref<RegistrationRowVo[]>([])
 const total = ref(0)
 const pageNum = ref(1)
@@ -54,9 +69,27 @@ const error = ref('')
 const tabPicked = ref(false)
 let defaultResolved = false
 
-const queryStatus = computed(() => (activeTab.value === 'CANCELED' ? activeSub.value : activeTab.value))
+/** 当前 tab 的子筛选项；无二级的 tab 返回空数组（子筛选行不渲染） */
+const currentSubs = computed(() => {
+  if (activeTab.value === 'BOOKED') {
+    return BOOKED_SUBS
+  }
+  return activeTab.value === 'CANCELED' ? CANCELED_SUBS : []
+})
+
+const currentSub = computed(() => subState.value[activeTab.value] ?? '')
+
+/** 查询用的状态：有子筛选取子状态，否则取 tab 本身 —— B2 永远只收到一个 `status` */
+const queryStatus = computed(() => currentSub.value || activeTab.value)
+
 const isEmpty = computed(() => !loading.value && !error.value && rows.value.length === 0)
 const finished = computed(() => rows.value.length >= total.value)
+
+/** 空态文案随子状态变化：已签到为空时不能再说「请选择科室与医生完成预约」 */
+const emptyText = computed(() => (queryStatus.value === 'SIGNED' ? '暂无已签到预约' : '暂无预约记录'))
+const emptyDesc = computed(() =>
+  queryStatus.value === 'SIGNED' ? '到院签到后，预约会显示在这里' : '请选择科室与医生完成预约',
+)
 
 function goDetail(row: RegistrationRowVo): void {
   navigateTo(ROUTES.registrationDetail, { registrationId: row.registrationId })
@@ -159,6 +192,7 @@ async function refresh(): Promise<void> {
     if (intent !== activeTab.value) {
       activeTab.value = intent
     }
+    resetSub(intent)
   } else {
     await resolveDefaultTab()
   }
@@ -166,11 +200,19 @@ async function refresh(): Promise<void> {
 }
 
 function switchSub(key: string): void {
-  if (activeSub.value === key) {
+  if (currentSub.value === key) {
     return
   }
-  activeSub.value = key
+  subState.value = { ...subState.value, [activeTab.value]: key }
   void load(true)
+}
+
+/** 落点意图必须回到该 tab 的默认子状态，否则「支付成功 → 查看预约」可能停在「已签到」看到空列表 */
+function resetSub(tabKey: string): void {
+  const subs = tabKey === 'BOOKED' ? BOOKED_SUBS : tabKey === 'CANCELED' ? CANCELED_SUBS : []
+  if (subs.length) {
+    subState.value = { ...subState.value, [tabKey]: subs[0].key }
+  }
 }
 
 function goLogin(): void {
@@ -268,12 +310,12 @@ onReachBottom(() => {
       </view>
     </view>
 
-    <view v-if="activeTab === 'CANCELED'" class="record__subs">
+    <view v-if="currentSubs.length" class="record__subs">
       <view
-        v-for="sub in SUBS"
+        v-for="sub in currentSubs"
         :key="sub.key"
         class="record__sub"
-        :class="{ 'record__sub--active': activeSub === sub.key }"
+        :class="{ 'record__sub--active': currentSub === sub.key }"
         @click="switchSub(sub.key)"
       >
         {{ sub.label }}
@@ -294,8 +336,8 @@ onReachBottom(() => {
         :loading="loading"
         :error="error"
         :empty="isEmpty"
-        empty-text="暂无预约记录"
-        empty-desc="请选择科室与医生完成预约"
+        :empty-text="emptyText"
+        :empty-desc="emptyDesc"
         :rows="3"
         @retry="load(true)"
       >
@@ -325,7 +367,8 @@ onReachBottom(() => {
               <view class="record__action-gap" />
               <wd-button size="small" type="primary" @click.stop="payNow(row)">去支付</wd-button>
             </template>
-            <template v-else-if="row.status === 'BOOKED'">
+            <!-- 已预约与已签到都要出示就诊码（契约 §4.3：两者都返回 visitCode） -->
+            <template v-else-if="row.status === 'BOOKED' || row.status === 'SIGNED'">
               <wd-button size="small" type="primary" @click.stop="goDetail(row)">查看就诊码</wd-button>
             </template>
             <template v-else>
